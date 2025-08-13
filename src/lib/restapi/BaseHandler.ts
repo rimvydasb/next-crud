@@ -2,6 +2,7 @@ import type {NextApiRequest, NextApiResponse} from 'next';
 import {ParsedUrlQuery} from 'querystring'
 import {Kysely} from "kysely";
 import {DatabaseSchema} from "../entities";
+import {DatabaseService} from "../DatabaseService";
 
 export enum ErrorCode {
     NOT_FOUND = 404,
@@ -42,9 +43,8 @@ export abstract class BaseHandler<T> {
     }
 
     protected get db(): Promise<Kysely<DatabaseSchema>> {
-        // @Todo: need to implement get or create method for Kysely instance
-        // @Todo: need to implement something like return DatabaseService.getOrCreate();
-        // process.env.DATABASE_URL, process.env.DATABASE_SCHEMA will be provided
+        // Delegate to DatabaseService singleton
+        return DatabaseService.getInstance();
     }
 
     protected error(code: ErrorCode, message?: string): void {
