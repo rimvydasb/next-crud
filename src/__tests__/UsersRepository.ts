@@ -3,7 +3,7 @@
 // -----------------------------------------------------------------------------
 import {Kysely} from "kysely";
 import {ColumnSpec, DatabaseSchema, SupportedDialect} from "../lib/entities";
-import {AbstractTable} from "../lib/repository";
+import {AbstractTable} from "../lib/AbstractTable";
 
 export class UsersRepository extends AbstractTable<'users'> {
     constructor(database: Kysely<DatabaseSchema>, dialect: SupportedDialect) {
