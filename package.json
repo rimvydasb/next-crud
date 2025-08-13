@@ -1,0 +1,21 @@
+{
+  "name": "kysely-repo",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "echo \"No tests\""
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "kysely": "^0.28.5",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@typescript-eslint/eslint-plugin": "^7",
+    "@typescript-eslint/parser": "^7",
+    "eslint": "^8.56.0",
+    "typescript": "^5"
+  }
+}
