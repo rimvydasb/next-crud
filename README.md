@@ -21,7 +21,7 @@ npm run lint
 npm run build
 ```
 
-Run tests (none provided):
+Run tests:
 ```bash
 npm test
 ```

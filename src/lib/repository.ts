@@ -36,13 +36,14 @@ export interface BaseTable {
 }
 
 // ----- Example table definition
-export interface TasksTable extends BaseTable {
-  title: string
-  done: boolean
+export interface UsersTable extends BaseTable {
+  name: string
+  surname: string
+  telephone_number: string
 }
 
 export interface DatabaseSchema {
-  tasks: TasksTable
+  users: UsersTable
 }
 
 // ----- Column specification understood by the repo
@@ -323,28 +324,20 @@ export abstract class AbstractTable<TableName extends keyof DatabaseSchema> {
 }
 
 // -----------------------------------------------------------------------------
-// Example repository: Tasks (define extra columns here only)
+// Example repository: Users (define extra columns here only)
 // -----------------------------------------------------------------------------
-export class TasksRepository extends AbstractTable<'tasks'> {
+export class UsersRepository extends AbstractTable<'users'> {
   constructor(database: Kysely<DatabaseSchema>, dialect: SupportedDialect) {
-    super(database, 'tasks', dialect)
+    super(database, 'users', dialect)
   }
 
   protected extraColumns(): ColumnSpec[] {
+    const textType = this.dialect === 'postgres' ? 'varchar(255)' : 'text'
     return [
-      { name: 'title', type: this.dialect === 'postgres' ? 'varchar(255)' : 'text', notNull: true },
-      { name: 'done', type: 'boolean', notNull: true, defaultSql: 'false' },
+      { name: 'name', type: textType, notNull: true },
+      { name: 'surname', type: textType, notNull: true },
+      { name: 'telephone_number', type: textType, notNull: true },
     ]
-  }
-
-  async listOpen(): Promise<Array<Selectable<DatabaseSchema['tasks']>>> {
-    return this.database
-      .selectFrom('tasks')
-      .selectAll()
-      .where('deleted_at', 'is', null)
-      .where('done', '=', false)
-      .orderBy('priority', 'asc')
-      .execute()
   }
 }
 
@@ -356,14 +349,12 @@ export class TasksRepository extends AbstractTable<'tasks'> {
 // const postgresDb = new Kysely<DatabaseSchema>({
 //   dialect: new PostgresDialect({ pool: new Pool({ connectionString: process.env.DATABASE_URL }) }),
 // })
-// const tasksPg = new TasksRepository(postgresDb, 'postgres')
-// await tasksPg.ensureSchema()
-
+// const usersPg = new UsersRepository(postgresDb, 'postgres')
+// await usersPg.ensureSchema()
 // SQLite example (better-sqlite3):
 // import BetterSqlite3 from 'better-sqlite3'
 // const sqliteDb = new Kysely<DatabaseSchema>({
 //   dialect: new SqliteDialect({ database: new BetterSqlite3('app.db') }),
 // })
-// const tasksSqlite = new TasksRepository(sqliteDb, 'sqlite')
-// await tasksSqlite.ensureSchema()
-
+// const usersSqlite = new UsersRepository(sqliteDb, 'sqlite')
+// await usersSqlite.ensureSchema()
