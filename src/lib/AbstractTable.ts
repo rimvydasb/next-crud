@@ -1,10 +1,3 @@
-// Kysely generic repository (Postgres + SQLite)
-// - No single-letter identifiers
-// - Works with PostgreSQL and SQLite
-// - Base columns: id, priority, deleted_at, created_at
-// - CRUD, soft delete, hard delete, restore, stable updatePriority (shifts others)
-// - ensureSchema() creates table, syncColumns() forward-adds newly declared columns
-
 import {Insertable, Kysely, Selectable, sql, Updateable,} from 'kysely'
 import {ColumnSpec, DatabaseSchema, SupportedDialect} from "./entities";
 import {addIdColumn, createdAtDefaultSql, createUniquePriorityIndex, ensureValidId} from "./utilities";
@@ -242,21 +235,3 @@ export abstract class AbstractTable<TableName extends keyof DatabaseSchema> {
         })) as Selectable<DatabaseSchema[TableName]>
     }
 }
-
-// -----------------------------------------------------------------------------
-// Example of initializing Kysely with either Postgres or SQLite
-// -----------------------------------------------------------------------------
-// Postgres example:
-// import { Pool } from 'pg'
-// const postgresDb = new Kysely<DatabaseSchema>({
-//   dialect: new PostgresDialect({ pool: new Pool({ connectionString: process.env.DATABASE_URL }) }),
-// })
-// const usersPg = new UsersRepository(postgresDb, 'postgres')
-// await usersPg.ensureSchema()
-// SQLite example (better-sqlite3):
-// import BetterSqlite3 from 'better-sqlite3'
-// const sqliteDb = new Kysely<DatabaseSchema>({
-//   dialect: new SqliteDialect({ database: new BetterSqlite3('app.db') }),
-// })
-// const usersSqlite = new UsersRepository(sqliteDb, 'sqlite')
-// await usersSqlite.ensureSchema()
