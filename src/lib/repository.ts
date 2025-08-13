@@ -298,11 +298,6 @@ export abstract class AbstractTable<TableName extends keyof DatabaseSchema> {
           .executeTakeFirstOrThrow()) as Selectable<DatabaseSchema[TableName]>
       }
 
-      await (trx.updateTable(this.tableName as string) as any)
-        .set({ priority: -1 } as unknown as Updateable<DatabaseSchema[TableName]>)
-        .where('id', '=', id)
-        .execute()
-
       if (currentPriority < targetPriority) {
         await (trx.updateTable(this.tableName as string) as any)
           .set({ priority: sql`priority - 1` } as unknown as Updateable<DatabaseSchema[TableName]>)
@@ -356,7 +351,6 @@ export class UsersRepository extends AbstractTable<'users'> {
 // })
 // const usersPg = new UsersRepository(postgresDb, 'postgres')
 // await usersPg.ensureSchema()
-
 // SQLite example (better-sqlite3):
 // import BetterSqlite3 from 'better-sqlite3'
 // const sqliteDb = new Kysely<DatabaseSchema>({
@@ -364,4 +358,3 @@ export class UsersRepository extends AbstractTable<'users'> {
 // })
 // const usersSqlite = new UsersRepository(sqliteDb, 'sqlite')
 // await usersSqlite.ensureSchema()
-
