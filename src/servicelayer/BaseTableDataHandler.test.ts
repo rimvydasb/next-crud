@@ -1,9 +1,9 @@
 import type {NextApiRequest, NextApiResponse} from 'next'
-import {Kysely, SqliteDialect} from "kysely"
+import {Kysely} from "kysely"
 import {DatabaseSchema} from "@datalayer/entities"
-import BetterSqlite3 from "better-sqlite3";
 import {BaseTableDataHandler} from "@servicelayer/BaseTableDataHandler";
 import {UsersRepository} from "@datalayer/_tests/UsersRepository";
+import {createTestDb} from "../testDb"
 
 // Simple helper to create mock Next.js request/response objects
 function createMock(method: string, body: any = {}, query: any = {}) {
@@ -50,12 +50,9 @@ class UsersHandler extends BaseTableDataHandler<'users'> {
 }
 
 describe('BaseTableDataHandler REST flow', () => {
-    beforeEach(() => {
-        // Each test gets a fresh in-memory database using BetterSqlite3. The
-        // handler will reuse this instance for the duration of the test so that
-        // data written in earlier requests can be read by later ones.
-        const sqlite = new BetterSqlite3(':memory:')
-        db = new Kysely<DatabaseSchema>({dialect: new SqliteDialect({database: sqlite})})
+    beforeEach(async () => {
+        // Each test gets a fresh database instance.
+        db = await createTestDb()
     })
 
     afterEach(async () => {

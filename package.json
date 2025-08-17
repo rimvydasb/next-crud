@@ -4,7 +4,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint .",
-    "test": "jest"
+    "test": "jest",
+    "test:pg": "USE_PG_TESTS=1 jest"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",

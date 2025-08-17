@@ -1,9 +1,9 @@
 import type {NextApiRequest, NextApiResponse} from 'next'
-import {Kysely, SqliteDialect} from 'kysely'
-import BetterSqlite3 from 'better-sqlite3'
+import {Kysely} from 'kysely'
 import {DatabaseSchema} from '@datalayer/entities'
 import {JSONTableDataHandler} from '@servicelayer/JSONTableDataHandler'
 import {DashboardConfigurationTable, DashboardConfiguration} from '@datalayer/_tests/DashboardConfigurationTable'
+import {createTestDb} from '../testDb'
 
 // Helper to create mock Next.js request/response objects
 function createMock(method: string, body: any = {}, query: any = {}) {
@@ -45,9 +45,8 @@ class DashboardHandler extends JSONTableDataHandler<'dashboard_configuration', D
 }
 
 describe('JSONTableDataHandler CRUD flow', () => {
-    beforeEach(() => {
-        const sqlite = new BetterSqlite3(':memory:')
-        db = new Kysely<DatabaseSchema>({dialect: new SqliteDialect({database: sqlite})})
+    beforeEach(async () => {
+        db = await createTestDb()
     })
 
     afterEach(async () => {
