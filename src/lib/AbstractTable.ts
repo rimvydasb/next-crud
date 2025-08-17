@@ -61,6 +61,7 @@ export abstract class AbstractTable<TableName extends keyof DatabaseSchema> {
     async syncColumns(schemaName: string = 'public'): Promise<void> {
         let existingColumnNames: string[]
 
+        // @Todo: should be extracted to ISQLApi under the syncColumns(...) method
         if (this.dialect === 'postgres') {
             const rows = await sql<{ column_name: string }>`
                 SELECT column_name
@@ -103,7 +104,6 @@ export abstract class AbstractTable<TableName extends keyof DatabaseSchema> {
         }
     }
 
-    // ---- CRUD
     async create(values: Insertable<DatabaseSchema[TableName]>): Promise<Selectable<DatabaseSchema[TableName]>> {
         // RETURNING is supported by Postgres and SQLite >= 3.35; if your SQLite is older, upgrade.
         return (await this.database
