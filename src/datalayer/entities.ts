@@ -35,10 +35,17 @@ export interface RequestDataCacheTable extends BaseTable {
     expired: boolean | number | null
 }
 
+// @Todo: DashboardConfigurationTable is just for testing, refactor it
+export interface DashboardConfigurationTable extends BaseTable {
+    type: string
+    content: unknown
+}
+
 // @Todo: this DatabaseSchema is just for testing, refactor it, next-crud API user will provide their own schema
 export interface DatabaseSchema {
     users: UsersTable
     request_data_cache: RequestDataCacheTable
+    dashboard_configuration: DashboardConfigurationTable
 }
 
 export enum ColumnType {
