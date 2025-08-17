@@ -63,9 +63,9 @@ describe('BaseTableDataHandler REST flow', () => {
         await db.destroy()
     })
 
-    test('create, fetch, update and delete', async () => {
-        // ---- Create
-        let {req, res} = createMock('POST', {
+    test('creates a user', async () => {
+        expect.assertions(3)
+        const {req, res} = createMock('POST', {
             name: 'John',
             surname: 'Doe',
             telephone_number: '123',
@@ -75,24 +75,62 @@ describe('BaseTableDataHandler REST flow', () => {
         const created = (res as any).data[0]
         expect(created).toMatchObject({name: 'John'})
 
-        const id = created.id
+        const repo = new UsersRepository(db)
+        await repo.ensureSchema()
+        const inDb = await repo.getById(created.id)
+        expect(inDb?.name).toBe('John')
+    })
 
-            // ---- Fetch
-        ;({req, res} = createMock('GET', undefined, {id: String(id)}))
+    test('fetches a user', async () => {
+        expect.assertions(2)
+        const repo = new UsersRepository(db)
+        await repo.ensureSchema()
+        const created = await repo.create({
+            name: 'Jane',
+            surname: 'Doe',
+            telephone_number: '123',
+        })
+
+        const {req, res} = createMock('GET', undefined, {id: String(created.id)})
         await new UsersHandler(req, res).handle()
         expect(res.statusCode).toBe(200)
-        expect((res as any).data[0].id).toBe(id)
+        expect((res as any).data[0]).toMatchObject({id: created.id, name: 'Jane'})
+    })
 
-        // ---- Update
-        ;({req, res} = createMock('PATCH', {id, name: 'Jane'}))
+    test('updates a user', async () => {
+        expect.assertions(3)
+        const repo = new UsersRepository(db)
+        await repo.ensureSchema()
+        const created = await repo.create({
+            name: 'Jim',
+            surname: 'Beam',
+            telephone_number: '321',
+        })
+
+        const {req, res} = createMock('PATCH', {id: created.id, name: 'Jimmy'})
         await new UsersHandler(req, res).handle()
         expect(res.statusCode).toBe(200)
-        expect((res as any).data[0].name).toBe('Jane')
+        const updated = await repo.getById(created.id)
+        expect(updated?.name).toBe('Jimmy')
+        expect((res as any).data[0].name).toBe('Jimmy')
+    })
 
-        // ---- Delete
-        ;({req, res} = createMock('DELETE', {id}))
+    test('deletes a user', async () => {
+        expect.assertions(3)
+        const repo = new UsersRepository(db)
+        await repo.ensureSchema()
+        const created = await repo.create({
+            name: 'Al',
+            surname: 'Bundy',
+            telephone_number: '555',
+        })
+
+        const {req, res} = createMock('DELETE', {id: created.id})
         await new UsersHandler(req, res).handle()
         expect(res.statusCode).toBe(200)
+        const deleted = await repo.getById(created.id)
+        expect(deleted).toBeUndefined()
+        expect((res as any).data[0].id).toBe(created.id)
     })
 })
 
