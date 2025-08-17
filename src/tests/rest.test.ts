@@ -1,7 +1,6 @@
 import type {NextApiRequest, NextApiResponse} from 'next'
 import {BaseTableDataHandler} from '../lib/restapi/BaseTableDataHandler'
 import {UsersRepository} from './UsersRepository'
-import {DatabaseService} from '../lib/DatabaseService'
 import {Kysely, SqliteDialect} from "kysely"
 import { DatabaseSchema } from "../lib/entities"
 import BetterSqlite3 from "better-sqlite3";
@@ -54,7 +53,6 @@ describe('BaseTableDataHandler REST flow', () => {
     })
 
     afterEach(async () => {
-        await DatabaseService.destroy()
     })
 
     test('create, fetch, update and delete', async () => {
