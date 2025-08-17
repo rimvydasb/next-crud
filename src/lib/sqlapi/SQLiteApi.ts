@@ -2,7 +2,7 @@ import {ColumnSpec, ColumnType} from "../entities";
 import {Kysely, sql} from "kysely";
 import {ISQLApi} from "./ISQLApi";
 
-export class SqliteApi implements ISQLApi {
+export class SQLiteApi implements ISQLApi {
     toStringType(type: ColumnType): string {
         switch (type) {
             case ColumnType.STRING:

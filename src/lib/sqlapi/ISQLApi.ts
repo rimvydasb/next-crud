@@ -2,7 +2,7 @@ import {Kysely, PostgresDialect, SqliteDialect} from 'kysely'
 import BetterSqlite3 from 'better-sqlite3'
 import {Pool} from 'pg'
 import {ColumnSpec, ColumnType, DatabaseSchema, SupportedDialect} from '../entities'
-import {SqliteApi} from "./SqliteApi";
+import {SQLiteApi} from "./SQLiteApi";
 import {PostgresSQLApi} from "./PostgresSQLApi";
 
 export interface ISQLApi {
@@ -24,7 +24,7 @@ export async function createInstance(
         const db = new Kysely<DatabaseSchema>({
             dialect: new SqliteDialect({ database: sqlite })
         })
-        return { db, dialect: 'sqlite', api: new SqliteApi() }
+        return { db, dialect: 'sqlite', api: new SQLiteApi() }
     }
     if (url.startsWith('postgres://') || url.startsWith('postgresql://')) {
         const pool = new Pool({ connectionString: url })

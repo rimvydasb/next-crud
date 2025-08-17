@@ -3,7 +3,7 @@ import BetterSqlite3 from 'better-sqlite3'
 import {DatabaseSchema} from "../lib/entities";
 import {UsersRepository} from "./UsersRepository";
 
-import {SqliteApi} from "../lib/sqlapi/SqliteApi";
+import {SQLiteApi} from "../lib/sqlapi/SQLiteApi";
 
 describe('UsersRepository CRUD', () => {
     let db: Kysely<DatabaseSchema>
@@ -12,7 +12,7 @@ describe('UsersRepository CRUD', () => {
     beforeEach(async () => {
         const sqlite = new BetterSqlite3(':memory:')
         db = new Kysely<DatabaseSchema>({dialect: new SqliteDialect({database: sqlite})})
-        repo = new UsersRepository(db, 'sqlite', new SqliteApi())
+        repo = new UsersRepository(db, 'sqlite', new SQLiteApi())
         await repo.ensureSchema()
     })
 
