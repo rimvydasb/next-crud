@@ -8,8 +8,8 @@ Reusable TypeScript repository layer built on [Kysely](https://github.com/kysely
 - [x] Soft delete, hard delete, and restore
 - [x] Stable priority updates that shift other rows
 - [x] Schema management via `ensureSchema()` and `syncColumns()`
-- [ ] (TODO) DatabaseService that provides a single point of access to the database
-- [ ] (TODO) BaseTableDataHandler that provided REST API for a given table
+- [x] `AbstractJSONTable` for storing typed JSON content
+- [x] `AbstractCacheTable` for simple cache management with TTL
 
 ## Basic API Usage
 

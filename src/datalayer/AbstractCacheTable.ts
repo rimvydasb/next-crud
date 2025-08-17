@@ -36,7 +36,7 @@ export abstract class AbstractCacheTable<
 
     protected extraColumns(): ColumnSpec[] {
         return [
-            {name: 'type', type: ColumnType.TEXT, notNull: true},
+            {name: 'type', type: ColumnType.STRING, notNull: true},
             {name: 'data', type: ColumnType.JSON, notNull: true},
             {name: 'expired', type: ColumnType.BOOLEAN},
         ]
