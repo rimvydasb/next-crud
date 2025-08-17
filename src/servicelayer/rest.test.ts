@@ -30,12 +30,15 @@ function createMock(method: string, body: any = {}, query: any = {}) {
     return {req, res: res as NextApiResponse}
 }
 
+// We'll reuse the same in-memory database instance for each handler call so
+// that data persists across multiple requests within a test case.
+let db: Kysely<DatabaseSchema>
+
 // Handler implementation for tests
 class UsersHandler extends BaseTableDataHandler<'users'> {
 
     protected getDb(): Promise<Kysely<DatabaseSchema>> {
-        const sqlite = new BetterSqlite3(':memory:')
-        const db = new Kysely<DatabaseSchema>({dialect: new SqliteDialect({database: sqlite})})
+        // Return the shared database instance created in the test hooks.
         return Promise.resolve(db)
     }
 
@@ -48,11 +51,16 @@ class UsersHandler extends BaseTableDataHandler<'users'> {
 
 describe('BaseTableDataHandler REST flow', () => {
     beforeEach(() => {
-        // Each test gets a fresh in-memory database
-        process.env.DATABASE_URL = 'sqlite://:memory:'
+        // Each test gets a fresh in-memory database using BetterSqlite3. The
+        // handler will reuse this instance for the duration of the test so that
+        // data written in earlier requests can be read by later ones.
+        const sqlite = new BetterSqlite3(':memory:')
+        db = new Kysely<DatabaseSchema>({dialect: new SqliteDialect({database: sqlite})})
     })
 
     afterEach(async () => {
+        // Clean up the database connection after each test run.
+        await db.destroy()
     })
 
     test('create, fetch, update and delete', async () => {
