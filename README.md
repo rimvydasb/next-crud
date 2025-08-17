@@ -17,6 +17,7 @@ Reusable TypeScript repository layer built on [Kysely](https://github.com/kysely
 ## Development
 Install dependencies:
 ```bash
+npm install -g npm-check-updates
 npm install
 ```
 
@@ -29,4 +30,14 @@ npm run build
 Run tests:
 ```bash
 npm test
+```
+
+## Maintenance
+
+```bash
+# Check for outdated dependencies
+ncu
+
+# Update dependencies
+ncu -u
 ```
