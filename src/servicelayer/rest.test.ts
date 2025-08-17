@@ -1,9 +1,9 @@
 import type {NextApiRequest, NextApiResponse} from 'next'
-import {BaseTableDataHandler} from '../lib/restapi/BaseTableDataHandler'
-import {UsersRepository} from './UsersRepository'
 import {Kysely, SqliteDialect} from "kysely"
-import { DatabaseSchema } from "../lib/entities"
+import { DatabaseSchema } from "../datalayer/entities"
 import BetterSqlite3 from "better-sqlite3";
+import {BaseTableDataHandler} from "./BaseTableDataHandler";
+import {UsersRepository} from "../datalayer/_tests/UsersRepository";
 
 // Simple helper to create mock Next.js request/response objects
 function createMock(method: string, body: any = {}, query: any = {}) {

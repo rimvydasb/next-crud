@@ -1,8 +1,8 @@
 import {Insertable, Kysely, Selectable, Updateable} from 'kysely'
-import {AbstractTable} from '../AbstractTable'
-import {DatabaseSchema} from '../entities'
-import {ensureValidId} from '../utilities'
 import {BaseHandler, ErrorCode, ResponseError} from './BaseHandler'
+import {DatabaseSchema} from "../datalayer/entities";
+import {AbstractTable} from "../datalayer/AbstractTable";
+import {ensureValidId} from "../datalayer/utilities";
 
 /**
  * Generic REST handler that wires HTTP verbs to repository operations

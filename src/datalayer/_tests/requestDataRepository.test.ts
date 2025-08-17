@@ -1,7 +1,7 @@
 import {Kysely, SqliteDialect, sql} from 'kysely'
 import BetterSqlite3 from 'better-sqlite3'
 import RequestDataRepository, {CacheEntry, CacheEntryKey, TTL} from './RequestDataRepository'
-import {DatabaseSchema} from '../lib/entities'
+import {DatabaseSchema} from "../entities";
 
 describe('DatabaseRequestDataCache', () => {
   let db: Kysely<DatabaseSchema>

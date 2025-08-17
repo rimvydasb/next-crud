@@ -3,9 +3,6 @@ import {ColumnSpec, DatabaseSchema, SupportedDialect} from "./entities";
 import {ISQLApi, createSqlApi} from "./sqlapi/ISQLApi";
 import {addIdColumn, createdAtDefaultSql, createUniquePriorityIndex, ensureValidId} from "./utilities";
 
-// -----------------------------------------------------------------------------
-// Generic repository
-// -----------------------------------------------------------------------------
 export abstract class AbstractTable<TableName extends keyof DatabaseSchema> {
 
     protected readonly dialect: SupportedDialect

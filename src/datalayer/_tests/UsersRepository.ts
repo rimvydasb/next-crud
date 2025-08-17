@@ -1,6 +1,6 @@
 import {Kysely} from "kysely";
-import {ColumnSpec, ColumnType, DatabaseSchema} from "../lib/entities";
-import {AbstractTable} from "../lib/AbstractTable";
+import {AbstractTable} from "../AbstractTable";
+import {ColumnSpec, ColumnType, DatabaseSchema} from "../entities";
 
 export class UsersRepository extends AbstractTable<'users'> {
 

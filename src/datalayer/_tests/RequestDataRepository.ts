@@ -1,6 +1,6 @@
 import {Kysely, sql} from 'kysely'
-import {AbstractCacheTable, TTL} from '../lib/AbstractCacheTable'
-import {ColumnSpec, ColumnType, DatabaseSchema} from '../lib/entities'
+import {AbstractCacheTable, TTL} from "../AbstractCacheTable";
+import {ColumnSpec, ColumnType, DatabaseSchema} from "../entities";
 
 export interface CacheEntryKey {
   requestUrl: string
