@@ -9,114 +9,114 @@ import {IJSONContent} from './IJSONContent'
  * directly on the returned objects.
  */
 export abstract class AbstractJSONTable<
-  TableName extends keyof DatabaseSchema,
-  Content extends IJSONContent,
+    TableName extends keyof DatabaseSchema,
+    Content extends IJSONContent,
 > extends AbstractTable<TableName> {
-  private readonly supportedTypes: string[]
+    private readonly supportedTypes: string[]
 
-  constructor(
-    database: Kysely<DatabaseSchema>,
-    tableName: TableName,
-    supportedTypes: string[],
-  ) {
-    super(database, tableName)
-    this.supportedTypes = supportedTypes
-  }
-
-  protected extraColumns(): ColumnSpec[] {
-    return [
-      {name: 'type', type: ColumnType.STRING, notNull: true},
-      {name: 'content', type: ColumnType.JSON, notNull: true},
-    ]
-  }
-
-  protected encodeJson(value: unknown): unknown {
-    return this.dialect === 'postgres' ? value : JSON.stringify(value)
-  }
-
-  protected decodeJson(value: unknown): Record<string, unknown> {
-    if (value == null) return {} as Record<string, unknown>
-    if (this.dialect === 'postgres') return value as Record<string, unknown>
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value) as Record<string, unknown>
-      } catch {
-        /* ignore */
-      }
+    constructor(
+        database: Kysely<DatabaseSchema>,
+        tableName: TableName,
+        supportedTypes: string[],
+    ) {
+        super(database, tableName)
+        this.supportedTypes = supportedTypes
     }
-    return value as Record<string, unknown>
-  }
 
-  private toJsonContent(content: Partial<Content>): Record<string, unknown> {
-    const rest = {...(content as any)}
-    delete (rest as any).id
-    delete (rest as any).priority
-    delete (rest as any).type
-    return rest
-  }
-
-  private fromRow(row: Selectable<DatabaseSchema[TableName]>): Content {
-    const json = this.decodeJson((row as any).content)
-    return {
-      ...json,
-      id: (row as any).id,
-      priority: (row as any).priority,
-      type: (row as any).type,
-    } as Content
-  }
-
-  async createWithContent(content: Content): Promise<Content> {
-    const {type, priority} = content
-    if (!type) {
-      throw new Error('type must be provided')
+    protected extraColumns(): ColumnSpec[] {
+        return [
+            {name: 'type', type: ColumnType.STRING, notNull: true},
+            {name: 'content', type: ColumnType.JSON, notNull: true},
+        ]
     }
-    if (this.supportedTypes.length && !this.supportedTypes.includes(type)) {
-      throw new Error(`Unsupported type: ${type}`)
-    }
-    const row = await super.create({
-      type,
-      priority: priority as any,
-      content: this.encodeJson(this.toJsonContent(content)),
-    } as Insertable<DatabaseSchema[TableName]>)
-    return this.fromRow(row)
-  }
 
-  async getByIdWithContent(
-    id: number,
-    options: {includeDeleted?: boolean} = {},
-  ): Promise<Content | undefined> {
-    const row = await super.getById(id, options)
-    return row ? this.fromRow(row) : undefined
-  }
-
-  async listWithContent(
-    options: {
-      includeDeleted?: boolean
-      limit?: number
-      offset?: number
-      orderBy?: {column: keyof DatabaseSchema[TableName]; direction?: 'asc' | 'desc'}
-    } = {},
-  ): Promise<Content[]> {
-    const rows = await super.list(options)
-    return rows.map(r => this.fromRow(r))
-  }
-
-  async updateWithContent(id: number, patch: Partial<Content>): Promise<Content | undefined> {
-    const {type, priority, ...jsonPatch} = patch as any
-    const updateData: any = {}
-    if (type !== undefined) {
-      if (this.supportedTypes.length && !this.supportedTypes.includes(type)) {
-        throw new Error(`Unsupported type: ${type}`)
-      }
-      updateData.type = type
+    protected encodeJson(value: unknown): unknown {
+        return this.dialect === 'postgres' ? value : JSON.stringify(value)
     }
-    if (priority !== undefined) updateData.priority = priority
-    if (Object.keys(jsonPatch).length) {
-      const current = await super.getById(id, {includeDeleted: true})
-      const existing = current ? this.decodeJson((current as any).content) : {}
-      updateData.content = this.encodeJson({...existing, ...jsonPatch})
+
+    protected decodeJson(value: unknown): Record<string, unknown> {
+        if (value == null) return {} as Record<string, unknown>
+        if (this.dialect === 'postgres') return value as Record<string, unknown>
+        if (typeof value === 'string') {
+            try {
+                return JSON.parse(value) as Record<string, unknown>
+            } catch {
+                /* ignore */
+            }
+        }
+        return value as Record<string, unknown>
     }
-    const row = await super.update(id, updateData as Updateable<DatabaseSchema[TableName]>)
-    return row ? this.fromRow(row) : undefined
-  }
+
+    private toJsonContent(content: Partial<Content>): Record<string, unknown> {
+        const rest = {...(content as any)}
+        delete (rest as any).id
+        delete (rest as any).priority
+        delete (rest as any).type
+        return rest
+    }
+
+    private fromRow(row: Selectable<DatabaseSchema[TableName]>): Content {
+        const json = this.decodeJson((row as any).content)
+        return {
+            ...json,
+            id: (row as any).id,
+            priority: (row as any).priority,
+            type: (row as any).type,
+        } as Content
+    }
+
+    async createWithContent(content: Content): Promise<Content> {
+        const {type, priority} = content
+        if (!type) {
+            throw new Error('type must be provided')
+        }
+        if (this.supportedTypes.length && !this.supportedTypes.includes(type)) {
+            throw new Error(`Unsupported type: ${type}`)
+        }
+        const row = await super.create({
+            type,
+            priority: priority as any,
+            content: this.encodeJson(this.toJsonContent(content)),
+        } as Insertable<DatabaseSchema[TableName]>)
+        return this.fromRow(row)
+    }
+
+    async getByIdWithContent(
+        id: number,
+        options: { includeDeleted?: boolean } = {},
+    ): Promise<Content | undefined> {
+        const row = await super.getById(id, options)
+        return row ? this.fromRow(row) : undefined
+    }
+
+    async listWithContent(
+        options: {
+            includeDeleted?: boolean
+            limit?: number
+            offset?: number
+            orderBy?: { column: keyof DatabaseSchema[TableName]; direction?: 'asc' | 'desc' }
+        } = {},
+    ): Promise<Content[]> {
+        const rows = await super.list(options)
+        return rows.map(r => this.fromRow(r))
+    }
+
+    async updateWithContent(id: number, patch: Partial<Content>): Promise<Content | undefined> {
+        const {type, priority, ...jsonPatch} = patch as any
+        const updateData: any = {}
+        if (type !== undefined) {
+            if (this.supportedTypes.length && !this.supportedTypes.includes(type)) {
+                throw new Error(`Unsupported type: ${type}`)
+            }
+            updateData.type = type
+        }
+        if (priority !== undefined) updateData.priority = priority
+        if (Object.keys(jsonPatch).length) {
+            const current = await super.getById(id, {includeDeleted: true})
+            const existing = current ? this.decodeJson((current as any).content) : {}
+            updateData.content = this.encodeJson({...existing, ...jsonPatch})
+        }
+        const row = await super.update(id, updateData as Updateable<DatabaseSchema[TableName]>)
+        return row ? this.fromRow(row) : undefined
+    }
 }

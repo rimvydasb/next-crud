@@ -1,6 +1,6 @@
 import type {NextApiRequest, NextApiResponse} from 'next'
 import {Kysely, SqliteDialect} from "kysely"
-import { DatabaseSchema } from "@datalayer/entities"
+import {DatabaseSchema} from "@datalayer/entities"
 import BetterSqlite3 from "better-sqlite3";
 import {BaseTableDataHandler} from "@servicelayer/BaseTableDataHandler";
 import {UsersRepository} from "@datalayer/_tests/UsersRepository";
