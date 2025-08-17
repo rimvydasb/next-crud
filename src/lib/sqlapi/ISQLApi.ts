@@ -23,10 +23,9 @@ export class SqliteApi implements ISQLApi {
             case ColumnType.BOOLEAN:
                 return 'integer'
             case ColumnType.TIMESTAMP:
-            case ColumnType.TIMESTAMPTZ:
                 return 'timestamp'
             case ColumnType.JSON:
-            case ColumnType.JSONB:
+            case ColumnType.TEXT:
                 return 'text'
             default:
                 return 'text'
@@ -69,12 +68,10 @@ export class PostgresApi implements ISQLApi {
                 return 'boolean'
             case ColumnType.TIMESTAMP:
                 return 'timestamp'
-            case ColumnType.TIMESTAMPTZ:
-                return 'timestamptz'
             case ColumnType.JSON:
-                return 'json'
-            case ColumnType.JSONB:
                 return 'jsonb'
+            case ColumnType.TEXT:
+                return 'text'
             default:
                 return 'text'
         }

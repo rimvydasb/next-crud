@@ -113,22 +113,27 @@ export abstract class BaseHandler<T> {
         }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     protected async get(params: Record<string, string>) {
         this.error(ErrorCode.METHOD_NOT_ALLOWED);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     protected async post(body: any) {
         this.error(ErrorCode.METHOD_NOT_ALLOWED);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     protected async put(body: any) {
         this.error(ErrorCode.METHOD_NOT_ALLOWED);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     protected async patch(body: any) {
         this.error(ErrorCode.METHOD_NOT_ALLOWED);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     protected async delete(body: any) {
         this.error(ErrorCode.METHOD_NOT_ALLOWED);
     }

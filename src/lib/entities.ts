@@ -30,23 +30,15 @@ export interface DatabaseSchema {
 }
 
 export enum ColumnType {
-
-    // @Todo: string is varchar max 255 in Postgres and TEXT in SQLite
+    // Maps to varchar(255) in Postgres and TEXT in SQLite
     STRING = 'string',
     INTEGER = 'integer',
     BOOLEAN = 'boolean',
     TIMESTAMP = 'timestamp',
-
-    // @Todo: drop TIMESTAMPTZ support, only TIMESTAMP is needed
-    TIMESTAMPTZ = 'timestamptz',
-
-    // @Todo: use 'jsonb' for Postgres and TEXT for SQLite
+    // Maps to jsonb in Postgres and TEXT in SQLite
     JSON = 'json',
-
-    // @Todo: remove JSONB - API will allow JSON
-    JSONB = 'jsonb',
-
-    // @Todo: add TEXT and use 'text' for Postgres and TEXT for SQLite
+    // Maps to text in both Postgres and SQLite
+    TEXT = 'text',
 }
 
 export type ColumnSpec = {
