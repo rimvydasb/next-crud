@@ -19,7 +19,8 @@ export function addIdColumn<T extends DatabaseSchema>(
     builder: ReturnType<Kysely<T>['schema']['createTable']>
 ) {
     if (dialect === 'postgres') {
-        return builder.addColumn('id', 'bigserial', (col) => col.primaryKey())
+        // Use 'serial' for Postgres to ensure the id is mapped as a JavaScript number (32-bit integer).
+        return builder.addColumn('id', 'serial', (col) => col.primaryKey())
     }
     // SQLite
     return builder.addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())

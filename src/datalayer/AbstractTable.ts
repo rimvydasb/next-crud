@@ -71,7 +71,6 @@ export abstract class AbstractTable<TableName extends keyof DatabaseSchema> {
     }
 
     async create(values: Insertable<DatabaseSchema[TableName]>): Promise<Selectable<DatabaseSchema[TableName]>> {
-        // RETURNING is supported by Postgres and SQLite >= 3.35; if your SQLite is older, upgrade.
         return (await this.database
             .insertInto(this.tableName)
             .values(values)

@@ -1,5 +1,5 @@
-import { Kysely, SqliteDialect, PostgresDialect, sql } from 'kysely'
-import type { DatabaseSchema } from './datalayer/entities'
+import {Kysely, SqliteDialect, PostgresDialect, sql} from 'kysely'
+import type {DatabaseSchema} from './datalayer/entities'
 
 /**
  * Create a Kysely instance for tests.
@@ -11,29 +11,36 @@ import type { DatabaseSchema } from './datalayer/entities'
  * recreated for every invocation.
  */
 export async function createTestDb(): Promise<Kysely<DatabaseSchema>> {
-  const usePg = !!process.env.USE_PG_TESTS
-  if (usePg) {
-    const { Pool } = await import('pg')
-    const dialect = new PostgresDialect({
-      pool: new Pool({
-        host: 'localhost',
-        port: 5435,
-        user: 'test_user',
-        password: 'password',
-        database: 'test_db'
-      })
-    })
-    const db = new Kysely<DatabaseSchema>({ dialect })
-    // Ensure a clean test schema for each run
-    await sql`DROP SCHEMA IF EXISTS test CASCADE`.execute(db)
-    await sql`CREATE SCHEMA test`.execute(db)
-    await sql`SET search_path TO test`.execute(db)
-    return db
-  }
+    const usePg = !!process.env.USE_PG_TESTS
+    if (usePg) {
+        const {Pool} = await import('pg')
+        const dialect = new PostgresDialect({
+            pool: new Pool({
+                host: 'localhost',
+                port: 5435,
+                user: 'test_user',
+                password: 'password',
+                database: 'test_db'
+            })
+        })
+        const db = new Kysely<DatabaseSchema>({dialect})
+        // Check if db connection is successful
+        const result = await sql`SELECT 1`.execute(db);
+        if (result.rows.length === 0) {
+            throw new Error('Failed to connect to the Postgres test database')
+        }
+        // Ensure a clean test schema for each run
+        await sql`DROP
+        SCHEMA IF EXISTS test CASCADE`.execute(db)
+        await sql`CREATE
+        SCHEMA test`.execute(db)
+        await sql`SET search_path TO test`.execute(db)
+        return db
+    }
 
-  const { default: BetterSqlite3 } = await import('better-sqlite3')
-  const sqlite = new BetterSqlite3(':memory:')
-  return new Kysely<DatabaseSchema>({
-    dialect: new SqliteDialect({ database: sqlite })
-  })
+    const {default: BetterSqlite3} = await import('better-sqlite3')
+    const sqlite = new BetterSqlite3(':memory:')
+    return new Kysely<DatabaseSchema>({
+        dialect: new SqliteDialect({database: sqlite})
+    })
 }

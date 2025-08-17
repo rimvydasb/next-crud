@@ -43,8 +43,13 @@ describe('DatabaseRequestDataCache', () => {
         expect(row.request_url).toBe(sampleKey.requestUrl)
         expect(row.type).toBe(sampleKey.type)
         expect(row.reference).toBe(sampleKey.reference)
-        expect(JSON.parse(row.data)).toEqual(sampleData)
-        expect(JSON.parse(row.metadata)).toEqual(sampleMeta)
+        if (dialect === 'postgres') {
+            expect(row.data).toEqual(sampleData)
+            expect(row.metadata).toEqual(sampleMeta)
+        } else {
+            expect(JSON.parse(row.data)).toEqual(sampleData)
+            expect(JSON.parse(row.metadata)).toEqual(sampleMeta)
+        }
     })
 
     it('get() should return null when no entry exists', async () => {
