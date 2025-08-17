@@ -1,13 +1,11 @@
 import {Kysely} from "kysely";
-import {ColumnSpec, ColumnType, DatabaseSchema, SupportedDialect} from "../lib/entities";
+import {ColumnSpec, ColumnType, DatabaseSchema} from "../lib/entities";
 import {AbstractTable} from "../lib/AbstractTable";
-import {ISQLApi} from "../lib/sqlapi/ISQLApi";
 
 export class UsersRepository extends AbstractTable<'users'> {
 
-    // @Todo, no reason to pass dialect, it is acquired from sqlApi
-    constructor(database: Kysely<DatabaseSchema>, dialect: SupportedDialect, sqlApi: ISQLApi) {
-        super(database, 'users', dialect, sqlApi)
+    constructor(database: Kysely<DatabaseSchema>) {
+        super(database, 'users')
     }
 
     protected extraColumns(): ColumnSpec[] {

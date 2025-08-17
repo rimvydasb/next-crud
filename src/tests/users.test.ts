@@ -3,8 +3,6 @@ import BetterSqlite3 from 'better-sqlite3'
 import {DatabaseSchema} from "../lib/entities";
 import {UsersRepository} from "./UsersRepository";
 
-import {SQLiteApi} from "../lib/sqlapi/SQLiteApi";
-
 describe('UsersRepository CRUD', () => {
     let db: Kysely<DatabaseSchema>
     let repo: UsersRepository
@@ -12,8 +10,7 @@ describe('UsersRepository CRUD', () => {
     beforeEach(async () => {
         const sqlite = new BetterSqlite3(':memory:')
         db = new Kysely<DatabaseSchema>({dialect: new SqliteDialect({database: sqlite})})
-        // @Todo: use SQLApi factory instead of passing SQLiteApi directly
-        repo = new UsersRepository(db, 'sqlite', new SQLiteApi())
+        repo = new UsersRepository(db)
         await repo.ensureSchema()
     })
 

@@ -1,7 +1,6 @@
 import {Insertable, Kysely, Updateable, sql} from 'kysely'
 import {AbstractTable} from './AbstractTable'
-import {ColumnSpec, ColumnType, DatabaseSchema, SupportedDialect} from './entities'
-import {ISQLApi} from './sqlapi/ISQLApi'
+import {ColumnSpec, ColumnType, DatabaseSchema} from './entities'
 
 export enum TTL {
   ONE_HOUR = 3600,
@@ -31,10 +30,8 @@ export abstract class AbstractCacheTable<
   constructor(
     database: Kysely<DatabaseSchema>,
     tableName: TableName,
-    dialect: SupportedDialect,
-    sqlApi: ISQLApi,
   ) {
-    super(database, tableName, dialect, sqlApi)
+    super(database, tableName)
   }
 
   protected extraColumns(): ColumnSpec[] {
