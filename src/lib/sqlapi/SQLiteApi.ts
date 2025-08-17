@@ -1,8 +1,9 @@
-import {ColumnSpec, ColumnType} from "../entities";
-import {Kysely, sql} from "kysely";
+import {ColumnSpec, ColumnType, DatabaseSchema, SupportedDialect} from "../entities";
+import {Kysely, SqliteDialect, sql} from "kysely";
 import {ISQLApi} from "./ISQLApi";
 
 export class SQLiteApi implements ISQLApi {
+    dialect: SupportedDialect = 'sqlite'
     toStringType(type: ColumnType): string {
         switch (type) {
             case ColumnType.STRING:
@@ -44,4 +45,13 @@ export class SQLiteApi implements ISQLApi {
         }
         return true
     }
+}
+
+export async function createSqliteInstance(filename: string): Promise<Kysely<DatabaseSchema>> {
+    // Load better-sqlite3 only when creating a SQLite instance
+    const { default: BetterSqlite3 } = await import('better-sqlite3')
+    const sqlite = new BetterSqlite3(filename)
+    return new Kysely<DatabaseSchema>({
+        dialect: new SqliteDialect({ database: sqlite })
+    })
 }

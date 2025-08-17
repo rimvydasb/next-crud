@@ -1,8 +1,9 @@
-import {ColumnSpec, ColumnType} from "../entities";
-import {Kysely, sql} from "kysely";
+import {ColumnSpec, ColumnType, DatabaseSchema, SupportedDialect} from "../entities";
+import {Kysely, PostgresDialect, sql} from "kysely";
 import {ISQLApi} from "./ISQLApi";
 
 export class PostgresSQLApi implements ISQLApi {
+    dialect: SupportedDialect = 'postgres'
     toStringType(type: ColumnType): string {
         switch (type) {
             case ColumnType.STRING:
@@ -55,4 +56,13 @@ export class PostgresSQLApi implements ISQLApi {
         }
         return true
     }
+}
+
+export async function createPostgresInstance(url: string): Promise<Kysely<DatabaseSchema>> {
+    // Load pg only when creating a Postgres instance
+    const { Pool } = await import('pg')
+    const pool = new Pool({ connectionString: url })
+    return new Kysely<DatabaseSchema>({
+        dialect: new PostgresDialect({ pool })
+    })
 }

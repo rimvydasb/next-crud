@@ -2,7 +2,6 @@ import {Kysely, SqliteDialect, sql} from 'kysely'
 import BetterSqlite3 from 'better-sqlite3'
 import RequestDataRepository, {CacheEntry, CacheEntryKey, TTL} from './RequestDataRepository'
 import {DatabaseSchema} from '../lib/entities'
-import {SQLiteApi} from '../lib/sqlapi/SQLiteApi'
 
 describe('DatabaseRequestDataCache', () => {
   let db: Kysely<DatabaseSchema>
@@ -19,7 +18,7 @@ describe('DatabaseRequestDataCache', () => {
   beforeEach(async () => {
     const sqlite = new BetterSqlite3(':memory:')
     db = new Kysely<DatabaseSchema>({dialect: new SqliteDialect({database: sqlite})})
-    cache = new RequestDataRepository(db, 'sqlite', new SQLiteApi())
+    cache = new RequestDataRepository(db)
     await cache.ensureSchema()
   })
 

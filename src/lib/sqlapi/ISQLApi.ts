@@ -1,13 +1,9 @@
-import {Kysely, PostgresDialect, SqliteDialect} from 'kysely'
-import BetterSqlite3 from 'better-sqlite3'
-import {Pool} from 'pg'
-import {ColumnSpec, ColumnType, DatabaseSchema, SupportedDialect} from '../entities'
-import {SQLiteApi} from "./SQLiteApi";
-import {PostgresSQLApi} from "./PostgresSQLApi";
+import {Kysely} from 'kysely'
+import {ColumnSpec, ColumnType, SupportedDialect} from '../entities'
+import {SQLiteApi} from './SQLiteApi'
+import {PostgresSQLApi} from './PostgresSQLApi'
 
 export interface ISQLApi {
-
-    // @Todo: implement dialect return for each ISQLApi implementation
     dialect: SupportedDialect
 
     toStringType(type: ColumnType): string
@@ -20,27 +16,22 @@ export interface ISQLApi {
     ): Promise<boolean>
 }
 
-// @Todo: implement ISQLApi factory that returns the correct ISQLApi instance based on url or dialect whatever is provided
-
-// @Todo: this createInstance should return only db: Kysely<DatabaseSchema> and be implemented for each dialect
-export async function createInstance(
-    url: string
-): Promise<{ db: Kysely<DatabaseSchema>; dialect: SupportedDialect; api: ISQLApi }> {
-    if (url.startsWith('sqlite://')) {
-        const filename = url.replace('sqlite://', '')
-        const sqlite = new BetterSqlite3(filename)
-        const db = new Kysely<DatabaseSchema>({
-            dialect: new SqliteDialect({ database: sqlite })
-        })
-        return { db, dialect: 'sqlite', api: new SQLiteApi() }
+/**
+ * Return ISQLApi implementation based on provided dialect or URL.
+ */
+export function createSqlApi(urlOrDialect: string | SupportedDialect): ISQLApi {
+    if (typeof urlOrDialect === 'string') {
+        if (urlOrDialect.startsWith('sqlite://') || urlOrDialect === 'sqlite') {
+            return new SQLiteApi()
+        }
+        if (
+            urlOrDialect.startsWith('postgres://') ||
+            urlOrDialect.startsWith('postgresql://') ||
+            urlOrDialect === 'postgres'
+        ) {
+            return new PostgresSQLApi()
+        }
     }
-    if (url.startsWith('postgres://') || url.startsWith('postgresql://')) {
-        const pool = new Pool({ connectionString: url })
-        const db = new Kysely<DatabaseSchema>({
-            dialect: new PostgresDialect({ pool })
-        })
-        return { db, dialect: 'postgres', api: new PostgresSQLApi() }
-    }
-    throw new Error(`Unsupported DATABASE_URL: ${url}`)
+    throw new Error(`Unsupported dialect: ${urlOrDialect}`)
 }
 

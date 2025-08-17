@@ -1,7 +1,6 @@
 import {Kysely, sql} from 'kysely'
 import {AbstractCacheTable, TTL} from '../lib/AbstractCacheTable'
-import {ColumnSpec, ColumnType, DatabaseSchema, SupportedDialect} from '../lib/entities'
-import {ISQLApi} from '../lib/sqlapi/ISQLApi'
+import {ColumnSpec, ColumnType, DatabaseSchema} from '../lib/entities'
 
 export interface CacheEntryKey {
   requestUrl: string
@@ -18,8 +17,8 @@ export interface CacheEntry<T> extends CacheEntryKey {
 }
 
 export default class RequestDataRepository extends AbstractCacheTable<'request_data_cache'> {
-  constructor(db: Kysely<DatabaseSchema>, dialect: SupportedDialect, sqlApi: ISQLApi) {
-    super(db, 'request_data_cache', dialect, sqlApi)
+  constructor(db: Kysely<DatabaseSchema>) {
+    super(db, 'request_data_cache')
   }
 
   private priorityCounter = 0

@@ -1,6 +1,8 @@
 import {Kysely} from 'kysely'
 import {DatabaseSchema, SupportedDialect} from './entities'
-import {ISQLApi, createInstance} from './sqlapi/ISQLApi'
+import {ISQLApi, createSqlApi} from './sqlapi/ISQLApi'
+import {createPostgresInstance} from './sqlapi/PostgresSQLApi'
+import {createSqliteInstance} from './sqlapi/SQLiteApi'
 
 /**
  * DatabaseService - singleton access to Kysely instance
@@ -8,7 +10,6 @@ import {ISQLApi, createInstance} from './sqlapi/ISQLApi'
 export class DatabaseService {
     private static instance: Kysely<DatabaseSchema> | null = null
 
-    private static _dialect: SupportedDialect
     private static _sqlApi: ISQLApi | null = null
 
     /** Return the current SQL dialect. Throws if database not initialized. */
@@ -16,7 +17,10 @@ export class DatabaseService {
         if (!this.instance) {
             throw new Error('DatabaseService not initialized')
         }
-        return this._dialect
+        const adapterName = (this.instance as any).getExecutor().adapter.constructor.name
+        if (adapterName === 'PostgresAdapter') return 'postgres'
+        if (adapterName === 'SqliteAdapter') return 'sqlite'
+        throw new Error('Unknown dialect')
     }
 
     /** Return SQL API instance. Throws if database not initialized. */
@@ -36,10 +40,16 @@ export class DatabaseService {
             throw new Error('DATABASE_URL not configured')
         }
 
-        const {db, dialect, api} = await createInstance(url)
+        let db: Kysely<DatabaseSchema>
+        if (url.startsWith('sqlite://')) {
+            db = await createSqliteInstance(url.replace('sqlite://', ''))
+        } else if (url.startsWith('postgres://') || url.startsWith('postgresql://')) {
+            db = await createPostgresInstance(url)
+        } else {
+            throw new Error(`Unsupported DATABASE_URL: ${url}`)
+        }
         this.instance = db
-        this._dialect = dialect
-        this._sqlApi = api
+        this._sqlApi = createSqlApi(url)
 
         return this.instance
     }

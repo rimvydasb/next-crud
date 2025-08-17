@@ -1,6 +1,6 @@
-import {Insertable, Kysely, Selectable, sql, Updateable,} from 'kysely'
+import {Insertable, Kysely, Selectable, sql, Updateable} from 'kysely'
 import {ColumnSpec, DatabaseSchema, SupportedDialect} from "./entities";
-import {ISQLApi} from "./sqlapi/ISQLApi";
+import {ISQLApi, createSqlApi} from "./sqlapi/ISQLApi";
 import {addIdColumn, createdAtDefaultSql, createUniquePriorityIndex, ensureValidId} from "./utilities";
 
 // -----------------------------------------------------------------------------
@@ -8,19 +8,26 @@ import {addIdColumn, createdAtDefaultSql, createUniquePriorityIndex, ensureValid
 // -----------------------------------------------------------------------------
 export abstract class AbstractTable<TableName extends keyof DatabaseSchema> {
 
-    // @Todo: dialect can be found in sqlApi, no reason to pass it
+    protected readonly dialect: SupportedDialect
+    protected readonly sqlApi: ISQLApi
+
     constructor(
         protected readonly database: Kysely<DatabaseSchema>,
-        protected readonly tableName: TableName,
-        protected readonly dialect: SupportedDialect,
-        protected readonly sqlApi: ISQLApi
+        protected readonly tableName: TableName
     ) {
+        const adapterName = (this.database as any).getExecutor().adapter.constructor.name
+        if (adapterName === 'PostgresAdapter') {
+            this.dialect = 'postgres'
+        } else if (adapterName === 'SqliteAdapter') {
+            this.dialect = 'sqlite'
+        } else {
+            throw new Error('Unsupported dialect')
+        }
+        this.sqlApi = createSqlApi(this.dialect)
     }
 
     // Access Kysely with relaxed typing for generic operations
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     protected get db(): Kysely<any> {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return this.database as unknown as Kysely<any>
     }
 
