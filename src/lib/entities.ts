@@ -1,15 +1,15 @@
-import {ColumnType, Generated} from "kysely";
+import {ColumnType as KyselyColumnType, Generated} from "kysely";
 
 export type SupportedDialect = 'postgres' | 'sqlite'
 
-export type TimestampDefault = ColumnType<Date, Date | string | undefined, Date | string | undefined>
+export type TimestampDefault = KyselyColumnType<Date, Date | string | undefined, Date | string | undefined>
 
-export type NullableTimestampDefault = ColumnType<
+export type NullableTimestampDefault = KyselyColumnType<
     Date | null,
     Date | string | null | undefined,
     Date | string | null | undefined
 >
-export type PriorityColumn = ColumnType<number, number | undefined, number | undefined>
+export type PriorityColumn = KyselyColumnType<number, number | undefined, number | undefined>
 
 export interface BaseTable {
     id: Generated<number>
@@ -29,11 +29,19 @@ export interface DatabaseSchema {
     users: UsersTable
 }
 
-// @Todo: implement enum ColumnType and use it in ColumnSpec
+export enum ColumnType {
+    STRING = 'string',
+    INTEGER = 'integer',
+    BOOLEAN = 'boolean',
+    TIMESTAMP = 'timestamp',
+    TIMESTAMPTZ = 'timestamptz',
+    JSON = 'json',
+    JSONB = 'jsonb',
+}
 
 export type ColumnSpec = {
     name: string
-    type: string // e.g. 'varchar(255)', 'boolean', 'integer', 'timestamp', 'timestamptz', 'jsonb'
+    type: ColumnType
     notNull?: boolean
     defaultSql?: string // raw SQL default, e.g. 'CURRENT_TIMESTAMP' or "'{}'::jsonb"
     unique?: boolean

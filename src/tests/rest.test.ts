@@ -31,7 +31,7 @@ function createMock(method: string, body: any = {}, query: any = {}) {
 // Handler implementation for tests
 class UsersHandler extends BaseTableDataHandler<'users'> {
   protected async getTable(): Promise<UsersRepository> {
-    const repo = new UsersRepository(await this.db, DatabaseService.dialect)
+    const repo = new UsersRepository(await this.db, DatabaseService.dialect, DatabaseService.sqlApi)
     await repo.ensureSchema()
     return repo
   }

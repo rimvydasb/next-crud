@@ -1,7 +1,6 @@
-import {Kysely, PostgresDialect, SqliteDialect} from 'kysely'
-import BetterSqlite3 from 'better-sqlite3'
-import {Pool} from 'pg'
+import {Kysely} from 'kysely'
 import {DatabaseSchema, SupportedDialect} from './entities'
+import {ISQLApi, createInstance} from './sqlapi/ISQLApi'
 
 /**
  * DatabaseService - singleton access to Kysely instance
@@ -10,6 +9,7 @@ export class DatabaseService {
     private static instance: Kysely<DatabaseSchema> | null = null
 
     private static _dialect: SupportedDialect
+    private static _sqlApi: ISQLApi | null = null
 
     /** Return the current SQL dialect. Throws if database not initialized. */
     public static get dialect(): SupportedDialect {
@@ -17,6 +17,14 @@ export class DatabaseService {
             throw new Error('DatabaseService not initialized')
         }
         return this._dialect
+    }
+
+    /** Return SQL API instance. Throws if database not initialized. */
+    public static get sqlApi(): ISQLApi {
+        if (!this.instance || !this._sqlApi) {
+            throw new Error('DatabaseService not initialized')
+        }
+        return this._sqlApi
     }
 
     /** Get or create the shared Kysely instance. */
@@ -28,23 +36,10 @@ export class DatabaseService {
             throw new Error('DATABASE_URL not configured')
         }
 
-        // @Todo: move it under ISQLApi.ts createInstance method
-        if (url.startsWith('sqlite://')) {
-            const filename = url.replace('sqlite://', '')
-            const sqlite = new BetterSqlite3(filename)
-            this.instance = new Kysely<DatabaseSchema>({
-                dialect: new SqliteDialect({database: sqlite}),
-            })
-            this._dialect = 'sqlite'
-        } else if (url.startsWith('postgres://') || url.startsWith('postgresql://')) {
-            const pool = new Pool({connectionString: url})
-            this.instance = new Kysely<DatabaseSchema>({
-                dialect: new PostgresDialect({pool}),
-            })
-            this._dialect = 'postgres'
-        } else {
-            throw new Error(`Unsupported DATABASE_URL: ${url}`)
-        }
+        const {db, dialect, api} = await createInstance(url)
+        this.instance = db
+        this._dialect = dialect
+        this._sqlApi = api
 
         return this.instance
     }
@@ -54,7 +49,8 @@ export class DatabaseService {
         if (this.instance) {
             await this.instance.destroy()
             this.instance = null
-            // dialect will be re-initialized on next getInstance call
+            // dialect and api will be re-initialized on next getInstance call
+            this._sqlApi = null
         }
     }
 }

@@ -2,20 +2,20 @@
 // Example repository: Users (define extra columns here only)
 // -----------------------------------------------------------------------------
 import {Kysely} from "kysely";
-import {ColumnSpec, DatabaseSchema, SupportedDialect} from "../lib/entities";
+import {ColumnSpec, ColumnType, DatabaseSchema, SupportedDialect} from "../lib/entities";
 import {AbstractTable} from "../lib/AbstractTable";
+import {ISQLApi} from "../lib/sqlapi/ISQLApi";
 
 export class UsersRepository extends AbstractTable<'users'> {
-    constructor(database: Kysely<DatabaseSchema>, dialect: SupportedDialect) {
-        super(database, 'users', dialect)
+    constructor(database: Kysely<DatabaseSchema>, dialect: SupportedDialect, sqlApi: ISQLApi) {
+        super(database, 'users', dialect, sqlApi)
     }
 
     protected extraColumns(): ColumnSpec[] {
-        const textType = this.dialect === 'postgres' ? 'varchar(255)' : 'text'
         return [
-            {name: 'name', type: textType, notNull: true},
-            {name: 'surname', type: textType, notNull: true},
-            {name: 'telephone_number', type: textType, notNull: true},
+            {name: 'name', type: ColumnType.STRING, notNull: true},
+            {name: 'surname', type: ColumnType.STRING, notNull: true},
+            {name: 'telephone_number', type: ColumnType.STRING, notNull: true},
         ]
     }
 }
