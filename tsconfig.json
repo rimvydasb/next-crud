@@ -7,7 +7,14 @@
     "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "baseUrl": "src",
+    "paths": {
+      "@datalayer": ["datalayer"],
+      "@datalayer/*": ["datalayer/*"],
+      "@servicelayer": ["servicelayer"],
+      "@servicelayer/*": ["servicelayer/*"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
