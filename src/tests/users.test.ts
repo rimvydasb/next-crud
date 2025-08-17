@@ -2,7 +2,8 @@ import {Kysely, SqliteDialect} from 'kysely'
 import BetterSqlite3 from 'better-sqlite3'
 import {DatabaseSchema} from "../lib/entities";
 import {UsersRepository} from "./UsersRepository";
-import {SqliteApi} from "../lib/sqlapi/ISQLApi";
+
+import {SqliteApi} from "../lib/sqlapi/SqliteApi";
 
 describe('UsersRepository CRUD', () => {
     let db: Kysely<DatabaseSchema>
