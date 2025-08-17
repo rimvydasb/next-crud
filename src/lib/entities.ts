@@ -25,8 +25,18 @@ export interface UsersTable extends BaseTable {
     telephone_number: string
 }
 
+export interface RequestDataCacheTable extends BaseTable {
+    request_url: string
+    reference: string | null
+    type: string
+    data: unknown
+    metadata: unknown | null
+    expired: boolean | number | null
+}
+
 export interface DatabaseSchema {
     users: UsersTable
+    request_data_cache: RequestDataCacheTable
 }
 
 export enum ColumnType {
