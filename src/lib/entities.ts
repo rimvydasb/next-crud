@@ -25,6 +25,7 @@ export interface UsersTable extends BaseTable {
     telephone_number: string
 }
 
+// @Todo: RequestDataCacheTable is just for testing, refactor it
 export interface RequestDataCacheTable extends BaseTable {
     request_url: string
     reference: string | null
@@ -34,6 +35,7 @@ export interface RequestDataCacheTable extends BaseTable {
     expired: boolean | number | null
 }
 
+// @Todo: this DatabaseSchema is just for testing, refactor it, next-crud API user will provide their own schema
 export interface DatabaseSchema {
     users: UsersTable
     request_data_cache: RequestDataCacheTable

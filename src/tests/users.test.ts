@@ -12,6 +12,7 @@ describe('UsersRepository CRUD', () => {
     beforeEach(async () => {
         const sqlite = new BetterSqlite3(':memory:')
         db = new Kysely<DatabaseSchema>({dialect: new SqliteDialect({database: sqlite})})
+        // @Todo: use SQLApi factory instead of passing SQLiteApi directly
         repo = new UsersRepository(db, 'sqlite', new SQLiteApi())
         await repo.ensureSchema()
     })

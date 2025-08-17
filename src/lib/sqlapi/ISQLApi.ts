@@ -6,7 +6,12 @@ import {SQLiteApi} from "./SQLiteApi";
 import {PostgresSQLApi} from "./PostgresSQLApi";
 
 export interface ISQLApi {
+
+    // @Todo: implement dialect return for each ISQLApi implementation
+    dialect: SupportedDialect
+
     toStringType(type: ColumnType): string
+
     syncColumns(
         db: Kysely<any>,
         tableName: string,
@@ -15,6 +20,9 @@ export interface ISQLApi {
     ): Promise<boolean>
 }
 
+// @Todo: implement ISQLApi factory that returns the correct ISQLApi instance based on url or dialect whatever is provided
+
+// @Todo: this createInstance should return only db: Kysely<DatabaseSchema> and be implemented for each dialect
 export async function createInstance(
     url: string
 ): Promise<{ db: Kysely<DatabaseSchema>; dialect: SupportedDialect; api: ISQLApi }> {

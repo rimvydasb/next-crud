@@ -7,6 +7,8 @@ import {addIdColumn, createdAtDefaultSql, createUniquePriorityIndex, ensureValid
 // Generic repository
 // -----------------------------------------------------------------------------
 export abstract class AbstractTable<TableName extends keyof DatabaseSchema> {
+
+    // @Todo: dialect can be found in sqlApi, no reason to pass it
     constructor(
         protected readonly database: Kysely<DatabaseSchema>,
         protected readonly tableName: TableName,
