@@ -1,15 +1,14 @@
-import {Kysely, SqliteDialect} from 'kysely'
-import BetterSqlite3 from 'better-sqlite3'
+import {Kysely} from 'kysely'
 import {UsersRepository} from "./UsersRepository";
 import {DatabaseSchema} from "../entities";
+import {createTestDb} from '../../testDb'
 
 describe('UsersRepository CRUD', () => {
     let db: Kysely<DatabaseSchema>
     let repo: UsersRepository
 
     beforeEach(async () => {
-        const sqlite = new BetterSqlite3(':memory:')
-        db = new Kysely<DatabaseSchema>({dialect: new SqliteDialect({database: sqlite})})
+        db = await createTestDb()
         repo = new UsersRepository(db)
         await repo.ensureSchema()
     })

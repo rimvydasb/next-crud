@@ -1,11 +1,16 @@
-import {Kysely, SqliteDialect, sql} from 'kysely'
-import BetterSqlite3 from 'better-sqlite3'
+import {Kysely, sql} from 'kysely'
 import RequestDataRepository, {CacheEntry, CacheEntryKey, TTL} from '@datalayer/RequestDataRepository'
 import {DatabaseSchema} from "../entities";
+import {createTestDb} from '../../testDb'
 
 describe('DatabaseRequestDataCache', () => {
     let db: Kysely<DatabaseSchema>
     let cache: RequestDataRepository
+    let dialect: string
+    const past = (seconds: number) =>
+        dialect === 'postgres'
+            ? sql`now() - make_interval(secs => ${seconds})`
+            : sql`datetime('now', '-' || ${seconds} || ' seconds')`
 
     const sampleKey: CacheEntryKey = {
         requestUrl: 'https://api.example.com/data',
@@ -16,10 +21,10 @@ describe('DatabaseRequestDataCache', () => {
     const sampleMeta = {m: 1}
 
     beforeEach(async () => {
-        const sqlite = new BetterSqlite3(':memory:')
-        db = new Kysely<DatabaseSchema>({dialect: new SqliteDialect({database: sqlite})})
+        db = await createTestDb()
         cache = new RequestDataRepository(db)
         await cache.ensureSchema()
+        dialect = (cache as any).dialect
     })
 
     afterEach(async () => {
@@ -69,18 +74,14 @@ describe('DatabaseRequestDataCache', () => {
 
         await db
             .updateTable('request_data_cache')
-            .set({expired: 1})
+            .set({expired: dialect === 'postgres' ? true : 1})
             .where('reference', '=', 'expired')
             .execute()
 
         await db
             .updateTable('request_data_cache')
             .set({
-                created_at: sql`datetime('now', '-' ||
-                ${TTL.ONE_HOUR * 2}
-                ||
-                ' seconds'
-                )`
+                created_at: past(TTL.ONE_HOUR * 2) as any
             })
             .where('reference', '=', 'outdated')
             .execute()
@@ -121,11 +122,7 @@ describe('DatabaseRequestDataCache', () => {
         await db
             .updateTable('request_data_cache')
             .set({
-                created_at: sql`datetime('now', '-' ||
-                ${TTL.ONE_HOUR * 2}
-                ||
-                ' seconds'
-                )`
+                created_at: past(TTL.ONE_HOUR * 2) as any
             })
             .execute()
 
@@ -140,7 +137,7 @@ describe('DatabaseRequestDataCache', () => {
         await cache.save(sampleKey, {a: 1}, {})
         await cache.save({...sampleKey, reference: 'other'}, {b: 2}, {})
         const before = await db.selectFrom('request_data_cache').select(['expired']).execute()
-        expect(before.every(r => r.expired === 0)).toBe(true)
+        expect(before.every((r: any) => !r.expired)).toBe(true)
 
         const affected = await cache.expireEntries({
             requestUrl: sampleKey.requestUrl,
@@ -150,14 +147,18 @@ describe('DatabaseRequestDataCache', () => {
 
         const res = await db.selectFrom('request_data_cache').select(['reference', 'expired']).execute()
         const map = new Map(res.map((r: any) => [r.reference, r.expired]))
-        expect(map.get(sampleKey.reference)).toBe(1)
-        expect(map.get('other')).toBe(1)
+        expect(map.get(sampleKey.reference)).toBeTruthy()
+        expect(map.get('other')).toBeTruthy()
     })
 
     it('cleanExpiredEntries() should delete only expired rows', async () => {
         await cache.save(sampleKey, sampleData, sampleMeta)
         await cache.save({...sampleKey, reference: 'expired-ref'}, sampleData, sampleMeta)
-        await db.updateTable('request_data_cache').set({expired: 1}).where('reference', '=', 'expired-ref').execute()
+        await db
+            .updateTable('request_data_cache')
+            .set({expired: dialect === 'postgres' ? true : 1})
+            .where('reference', '=', 'expired-ref')
+            .execute()
 
         const before = await db.selectFrom('request_data_cache').select(['reference']).execute()
         expect(before.length).toBe(2)
@@ -178,11 +179,7 @@ describe('DatabaseRequestDataCache', () => {
         await db
             .updateTable('request_data_cache')
             .set({
-                created_at: sql`datetime('now', '-' ||
-                ${TTL.ONE_HOUR * 2}
-                ||
-                ' seconds'
-                )`
+                created_at: past(TTL.ONE_HOUR * 2) as any
             })
             .execute()
 
@@ -225,11 +222,7 @@ describe('DatabaseRequestDataCache', () => {
         await db
             .updateTable('request_data_cache')
             .set({
-                created_at: sql`datetime('now', '-' ||
-                ${TTL.ONE_HOUR}
-                ||
-                ' seconds'
-                )`
+                created_at: past(TTL.ONE_HOUR) as any
             })
             .where('reference', '=', 'ref1')
             .execute()
@@ -237,11 +230,7 @@ describe('DatabaseRequestDataCache', () => {
         await db
             .updateTable('request_data_cache')
             .set({
-                created_at: sql`datetime('now', '-' ||
-                ${TTL.ONE_DAY}
-                ||
-                ' seconds'
-                )`
+                created_at: past(TTL.ONE_DAY) as any
             })
             .where('reference', '=', 'ref2')
             .execute()
@@ -249,11 +238,7 @@ describe('DatabaseRequestDataCache', () => {
         await db
             .updateTable('request_data_cache')
             .set({
-                created_at: sql`datetime('now', '-' ||
-                ${TTL.ONE_YEAR}
-                ||
-                ' seconds'
-                )`
+                created_at: past(TTL.ONE_YEAR) as any
             })
             .where('reference', '=', 'ref3')
             .execute()
@@ -261,11 +246,7 @@ describe('DatabaseRequestDataCache', () => {
         await db
             .updateTable('request_data_cache')
             .set({
-                created_at: sql`datetime('now', '-' ||
-                ${TTL.ONE_WEEK}
-                ||
-                ' seconds'
-                )`
+                created_at: past(TTL.ONE_WEEK) as any
             })
             .where('reference', '=', 'ref4')
             .execute()
