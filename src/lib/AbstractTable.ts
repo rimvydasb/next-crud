@@ -1,5 +1,6 @@
 import {Insertable, Kysely, Selectable, sql, Updateable,} from 'kysely'
 import {ColumnSpec, DatabaseSchema, SupportedDialect} from "./entities";
+import {ISQLApi} from "./sqlapi/ISQLApi";
 import {addIdColumn, createdAtDefaultSql, createUniquePriorityIndex, ensureValidId} from "./utilities";
 
 // -----------------------------------------------------------------------------
@@ -9,7 +10,8 @@ export abstract class AbstractTable<TableName extends keyof DatabaseSchema> {
     constructor(
         protected readonly database: Kysely<DatabaseSchema>,
         protected readonly tableName: TableName,
-        protected readonly dialect: SupportedDialect
+        protected readonly dialect: SupportedDialect,
+        protected readonly sqlApi: ISQLApi
     ) {
     }
 
@@ -43,7 +45,7 @@ export abstract class AbstractTable<TableName extends keyof DatabaseSchema> {
         for (const column of this.extraColumns()) {
             createBuilder = createBuilder.addColumn(
                 column.name,
-                column.type as any,
+                this.sqlApi.toStringType(column.type) as any,
                 (col) => {
                     if (column.notNull) col = col.notNull()
                     if (column.unique) col = col.unique()
@@ -59,49 +61,7 @@ export abstract class AbstractTable<TableName extends keyof DatabaseSchema> {
 
     // Add any newly declared extra columns to an existing table (forward-only)
     async syncColumns(schemaName: string = 'public'): Promise<void> {
-        let existingColumnNames: string[]
-
-        // @Todo: should be extracted to ISQLApi under the syncColumns(...) method
-        if (this.dialect === 'postgres') {
-            const rows = await sql<{ column_name: string }>`
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_schema = ${schemaName}
-                  AND table_name = ${this.tableName as string}
-            `.execute(this.database)
-            existingColumnNames = rows.rows.map((r) => r.column_name)
-        } else {
-            // SQLite
-            const pragma = await sql<{ name: string }>`PRAGMA table_info(${sql.raw(
-                    String(this.tableName)
-            )});`.execute(this.db)
-            existingColumnNames = pragma.rows.map((r) => r.name)
-        }
-
-        const existingColumnsSet = new Set(existingColumnNames)
-        const columnsToAdd = this.extraColumns().filter(
-            (column) => !existingColumnsSet.has(column.name)
-        )
-
-        if (columnsToAdd.length === 0) return
-
-        for (const column of columnsToAdd) {
-            await this.db.schema
-                .alterTable(this.tableName as string)
-                .addColumn(
-                    column.name,
-                    column.type as any,
-                    (col) => {
-                        // Note: adding NOT NULL to a non-empty table without default will fail
-                        if (column.notNull && column.defaultSql) col = col.notNull().defaultTo(sql.raw(column.defaultSql))
-                        else if (column.notNull) col = col.notNull()
-                        if (column.unique) col = col.unique()
-                        if (column.defaultSql) col = col.defaultTo(sql.raw(column.defaultSql))
-                        return col
-                    }
-                )
-                .execute()
-        }
+        await this.sqlApi.syncColumns(this.db, this.tableName as string, this.extraColumns(), schemaName)
     }
 
     async create(values: Insertable<DatabaseSchema[TableName]>): Promise<Selectable<DatabaseSchema[TableName]>> {
