@@ -11,7 +11,7 @@ export interface DashboardConfiguration extends IJSONContent {
   type: 'DASHBOARD'
 }
 
-export class DashboardConfigurationTable extends AbstractJSONTable<'dashboard_configuration', DashboardConfiguration> {
+export class DashboardConfigurationTable extends AbstractJSONTable<DatabaseSchema, 'dashboard_configuration', DashboardConfiguration> {
   constructor(database: Kysely<DatabaseSchema>) {
     super(database, 'dashboard_configuration', ['DASHBOARD'])
   }

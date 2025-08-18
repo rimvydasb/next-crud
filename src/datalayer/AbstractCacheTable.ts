@@ -1,6 +1,6 @@
 import {Insertable, Kysely, Updateable, sql} from 'kysely'
 import {AbstractTable} from './AbstractTable'
-import {ColumnSpec, ColumnType, DatabaseSchema} from './entities'
+import {ColumnSpec, ColumnType} from './entities'
 
 export enum TTL {
     ONE_HOUR = 3600,
@@ -25,10 +25,11 @@ export interface CacheEntry<T> extends CacheEntryKey {
 }
 
 export abstract class AbstractCacheTable<
-    TableName extends keyof DatabaseSchema
-> extends AbstractTable<TableName> {
+    DST,
+    TableName extends keyof DST & string,
+> extends AbstractTable<DST, TableName> {
     constructor(
-        database: Kysely<DatabaseSchema>,
+        database: Kysely<DST>,
         tableName: TableName,
     ) {
         super(database, tableName)
@@ -47,7 +48,7 @@ export abstract class AbstractCacheTable<
         this.ensureSelectNotEmpty(select)
         const qb = this.db
             .updateTable(this.tableName as string)
-            .set({expired: this.expiredValue(true)} as unknown as Updateable<DatabaseSchema[TableName]>)
+            .set({expired: this.expiredValue(true)} as unknown as Updateable<DST[TableName]>)
 
         const qbWithFilters = this.applyKeyFilters(qb, select)
             .where(({eb, ref}: any) => eb(ref('created_at'), '>=', this.nowMinusSecondsExpr(ttl)))
@@ -126,7 +127,7 @@ export abstract class AbstractCacheTable<
         try {
             await this.db
                 .insertInto(this.tableName as string)
-                .values(values as Insertable<DatabaseSchema[TableName]>)
+                .values(values as Insertable<DST[TableName]>)
                 .returning(['id'])
                 .executeTakeFirst()
             return true
@@ -134,7 +135,7 @@ export abstract class AbstractCacheTable<
             try {
                 await this.db
                     .insertInto(this.tableName as string)
-                    .values(values as Insertable<DatabaseSchema[TableName]>)
+                    .values(values as Insertable<DST[TableName]>)
                     .executeTakeFirst()
                 return true
             } catch (e2) {
