@@ -1,6 +1,5 @@
 import {Insertable, Kysely, Selectable, Updateable} from 'kysely'
 import {BaseHandler, ErrorCode, ResponseError} from './BaseHandler'
-import {DatabaseSchema} from "@datalayer/entities";
 import {AbstractTable} from "@datalayer/AbstractTable";
 import {ensureValidId} from "@datalayer/utilities";
 
@@ -9,20 +8,20 @@ import {ensureValidId} from "@datalayer/utilities";
  * implemented by {@link AbstractTable}. Subclasses only need to provide
  * a repository instance via {@link getTable}.
  */
-export abstract class BaseTableDataHandler<TableName extends keyof DatabaseSchema> extends BaseHandler<Array<Selectable<DatabaseSchema[TableName]>>> {
+export abstract class BaseTableDataHandler<DST, TableName extends keyof DST & string> extends BaseHandler<Array<Selectable<DST[TableName]>>> {
 
     /**
      * Subclasses must return a repository instance for the table they manage.
      * The repository is typically created using the Kysely instance from
      * {@link BaseHandler.db} and should have its schema ensured prior to use.
      */
-    protected abstract getTable(): Promise<AbstractTable<TableName>>
+    protected abstract getTable(): Promise<AbstractTable<DST, TableName>>
 
     /**
      * Subclasses must return the Kysely instance used for database operations.
      * API user will usually manage db connection lifecycle
      */
-    protected abstract getDb(): Promise<Kysely<DatabaseSchema>>
+    protected abstract getDb(): Promise<Kysely<DST>>
 
     // ----- GET: fetch list or single row by id
     protected async get(params: Record<string, string>): Promise<void> {
@@ -48,7 +47,7 @@ export abstract class BaseTableDataHandler<TableName extends keyof DatabaseSchem
     }
 
     // ----- POST: create new row
-    protected async post(body: Insertable<DatabaseSchema[TableName]>): Promise<void> {
+    protected async post(body: Insertable<DST[TableName]>): Promise<void> {
         const table = await this.getTable()
         const created = await table.create(body)
         await this.postProcess(await this.getDb())
@@ -57,7 +56,7 @@ export abstract class BaseTableDataHandler<TableName extends keyof DatabaseSchem
 
     // ----- PATCH: update existing row or priority
     protected async patch(
-        body: Updateable<DatabaseSchema[TableName]> & { id: number }
+        body: Updateable<DST[TableName]> & { id: number }
     ): Promise<void> {
         const table = await this.getTable()
         ensureValidId(body.id)
@@ -103,7 +102,7 @@ export abstract class BaseTableDataHandler<TableName extends keyof DatabaseSchem
      * invalidation.
      */
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    protected async postProcess(db: Kysely<DatabaseSchema>): Promise<void> {
+    protected async postProcess(db: Kysely<DST>): Promise<void> {
         // Default: no-op
     }
 
@@ -112,8 +111,8 @@ export abstract class BaseTableDataHandler<TableName extends keyof DatabaseSchem
      * subclasses to transform or filter the result set.
      */
     protected async postGet(
-        result: Array<Selectable<DatabaseSchema[TableName]>>
-    ): Promise<Array<Selectable<DatabaseSchema[TableName]>>> {
+        result: Array<Selectable<DST[TableName]>>
+    ): Promise<Array<Selectable<DST[TableName]>>> {
         return result
     }
 }

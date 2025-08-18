@@ -18,7 +18,7 @@ Reusable TypeScript repository layer built on [Kysely](https://github.com/kysely
 Store typed JSON content while keeping `id`, `priority`, and `type` columns.
 
 ```ts
-class DashboardTable extends AbstractJSONTable<'dashboard_configuration', Dashboard> {
+class DashboardTable extends AbstractJSONTable<DatabaseSchema, 'dashboard_configuration', Dashboard> {
   constructor(db: Kysely<DatabaseSchema>) {
     super(db, 'dashboard_configuration', ['DASHBOARD'])
   }
@@ -35,7 +35,7 @@ const fetched = await repo.getByIdWithContent(created.id!)
 Next.js handler that wraps an `AbstractJSONTable` and exposes CRUD endpoints.
 
 ```ts
-class DashboardHandler extends JSONTableDataHandler<'dashboard_configuration', Dashboard> {
+class DashboardHandler extends JSONTableDataHandler<DatabaseSchema, 'dashboard_configuration', Dashboard> {
   protected getDb() { return db }
   protected async getTable() { return new DashboardTable(db) }
 }
@@ -49,7 +49,7 @@ export default (req: NextApiRequest, res: NextApiResponse) =>
 Simple cache table with TTL helpers.
 
 ```ts
-class RequestCache extends AbstractCacheTable<'request_data_cache'> {
+class RequestCache extends AbstractCacheTable<DatabaseSchema, 'request_data_cache'> {
   constructor(db: Kysely<DatabaseSchema>) {
     super(db, 'request_data_cache')
   }

@@ -16,7 +16,7 @@ export interface CacheEntry<T> extends CacheEntryKey {
     expired: boolean | number | null
 }
 
-export default class RequestDataRepository extends AbstractCacheTable<'request_data_cache'> {
+export default class RequestDataRepository extends AbstractCacheTable<DatabaseSchema, 'request_data_cache'> {
     constructor(db: Kysely<DatabaseSchema>) {
         super(db, 'request_data_cache')
     }

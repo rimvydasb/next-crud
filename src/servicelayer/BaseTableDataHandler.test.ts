@@ -35,7 +35,7 @@ function createMock(method: string, body: any = {}, query: any = {}) {
 let db: Kysely<DatabaseSchema>
 
 // Handler implementation for tests
-class UsersHandler extends BaseTableDataHandler<'users'> {
+class UsersHandler extends BaseTableDataHandler<DatabaseSchema, 'users'> {
 
     protected getDb(): Promise<Kysely<DatabaseSchema>> {
         // Return the shared database instance created in the test hooks.

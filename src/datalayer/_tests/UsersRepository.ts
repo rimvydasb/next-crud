@@ -2,7 +2,7 @@ import {Kysely} from "kysely";
 import {AbstractTable} from "../AbstractTable";
 import {ColumnSpec, ColumnType, DatabaseSchema} from "../entities";
 
-export class UsersRepository extends AbstractTable<'users'> {
+export class UsersRepository extends AbstractTable<DatabaseSchema, 'users'> {
 
     constructor(database: Kysely<DatabaseSchema>) {
         super(database, 'users')

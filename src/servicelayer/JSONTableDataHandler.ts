@@ -1,6 +1,5 @@
 import {Kysely} from 'kysely'
 import {BaseHandler, ErrorCode, ResponseError} from './BaseHandler'
-import {DatabaseSchema} from '@datalayer/entities'
 import {AbstractJSONTable} from '@datalayer/AbstractJSONTable'
 import {IJSONContent} from '@datalayer/IJSONContent'
 import {ensureValidId} from '@datalayer/utilities'
@@ -10,18 +9,19 @@ import {ensureValidId} from '@datalayer/utilities'
  * to {@link BaseTableDataHandler} but operates on JSON content objects.
  */
 export abstract class JSONTableDataHandler<
-    TableName extends keyof DatabaseSchema,
+    DST,
+    TableName extends keyof DST & string,
     Content extends IJSONContent,
 > extends BaseHandler<Content[]> {
     /**
      * Subclasses must return a repository instance for the table they manage.
      */
-    protected abstract getTable(): Promise<AbstractJSONTable<TableName, Content>>
+    protected abstract getTable(): Promise<AbstractJSONTable<DST, TableName, Content>>
 
     /**
      * Subclasses must return the Kysely instance used for database operations.
      */
-    protected abstract getDb(): Promise<Kysely<DatabaseSchema>>
+    protected abstract getDb(): Promise<Kysely<DST>>
 
     // ----- GET: fetch list or single row by id
     protected async get(params: Record<string, string>): Promise<void> {
@@ -100,7 +100,7 @@ export abstract class JSONTableDataHandler<
 
     // ----- Hooks for subclasses -------------------------------------------------
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    protected async postProcess(db: Kysely<DatabaseSchema>): Promise<void> {
+    protected async postProcess(db: Kysely<DST>): Promise<void> {
         // Default: no-op
     }
 

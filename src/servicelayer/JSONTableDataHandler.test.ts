@@ -32,7 +32,7 @@ function createMock(method: string, body: any = {}, query: any = {}) {
 
 let db: Kysely<DatabaseSchema>
 
-class DashboardHandler extends JSONTableDataHandler<'dashboard_configuration', DashboardConfiguration> {
+class DashboardHandler extends JSONTableDataHandler<DatabaseSchema, 'dashboard_configuration', DashboardConfiguration> {
     protected getDb(): Promise<Kysely<DatabaseSchema>> {
         return Promise.resolve(db)
     }
