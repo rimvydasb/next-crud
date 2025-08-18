@@ -1,6 +1,6 @@
 import {Insertable, Kysely, Selectable, Updateable} from 'kysely'
 import {AbstractTable} from './AbstractTable'
-import {ColumnSpec, ColumnType, DatabaseSchema} from './entities'
+import {ColumnSpec, ColumnType} from './entities'
 import {IJSONContent} from './IJSONContent'
 
 /**
@@ -8,14 +8,11 @@ import {IJSONContent} from './IJSONContent'
  * JSON in a `content` column while exposing `id`, `type` and `priority` fields
  * directly on the returned objects.
  */
-export abstract class AbstractJSONTable<
-    TableName extends keyof DatabaseSchema,
-    Content extends IJSONContent,
-> extends AbstractTable<TableName> {
+export abstract class AbstractJSONTable<DST, TableName extends keyof DST & string, Content extends IJSONContent> extends AbstractTable<DST, TableName> {
     private readonly supportedTypes: string[]
 
     constructor(
-        database: Kysely<DatabaseSchema>,
+        database: Kysely<DST>,
         tableName: TableName,
         supportedTypes: string[],
     ) {
@@ -55,7 +52,7 @@ export abstract class AbstractJSONTable<
         return rest
     }
 
-    private fromRow(row: Selectable<DatabaseSchema[TableName]>): Content {
+    private fromRow(row: Selectable<DST[TableName]>): Content {
         const json = this.decodeJson((row as any).content)
         return {
             ...json,
@@ -77,7 +74,7 @@ export abstract class AbstractJSONTable<
             type,
             priority: priority as any,
             content: this.encodeJson(this.toJsonContent(content)),
-        } as Insertable<DatabaseSchema[TableName]>)
+        } as Insertable<DST[TableName]>)
         return this.fromRow(row)
     }
 
@@ -94,7 +91,7 @@ export abstract class AbstractJSONTable<
             includeDeleted?: boolean
             limit?: number
             offset?: number
-            orderBy?: { column: keyof DatabaseSchema[TableName]; direction?: 'asc' | 'desc' }
+            orderBy?: { column: keyof DST[TableName]; direction?: 'asc' | 'desc' }
         } = {},
     ): Promise<Content[]> {
         const rows = await super.list(options)
@@ -116,7 +113,7 @@ export abstract class AbstractJSONTable<
             const existing = current ? this.decodeJson((current as any).content) : {}
             updateData.content = this.encodeJson({...existing, ...jsonPatch})
         }
-        const row = await super.update(id, updateData as Updateable<DatabaseSchema[TableName]>)
+        const row = await super.update(id, updateData as Updateable<DST[TableName]>)
         return row ? this.fromRow(row) : undefined
     }
 }
