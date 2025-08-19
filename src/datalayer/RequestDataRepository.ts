@@ -18,7 +18,7 @@ export interface CacheEntry<T> extends CacheEntryKey {
 
 export default class RequestDataRepository extends AbstractCacheTable<DatabaseSchema, 'request_data_cache'> {
     constructor(db: Kysely<DatabaseSchema>) {
-        super(db, 'request_data_cache')
+        super(db, {tableName: 'request_data_cache', softDelete: true, hasPriority: true})
     }
 
     private priorityCounter = 0

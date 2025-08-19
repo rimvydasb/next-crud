@@ -13,6 +13,6 @@ export interface DashboardConfiguration extends IJSONContent {
 
 export class DashboardConfigurationTable extends AbstractJSONTable<DatabaseSchema, 'dashboard_configuration', DashboardConfiguration> {
   constructor(database: Kysely<DatabaseSchema>) {
-    super(database, 'dashboard_configuration', ['DASHBOARD'])
+    super(database, {tableName: 'dashboard_configuration', softDelete: true, hasPriority: true}, ['DASHBOARD'])
   }
 }

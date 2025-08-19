@@ -1,17 +1,39 @@
 import {Insertable, Kysely, Selectable, sql, Updateable} from 'kysely'
-import {ColumnSpec, SupportedDialect} from "./entities";
-import {ISQLApi, createSqlApi} from "./sqlapi/ISQLApi";
-import {addIdColumn, createdAtDefaultSql, createPriorityIndex, ensureValidId} from "./utilities";
+import {ColumnSpec, SupportedDialect} from './entities'
+import {ISQLApi, createSqlApi} from './sqlapi/ISQLApi'
+import {
+    addIdColumn,
+    createdAtDefaultSql,
+    createPriorityIndex,
+    ensureValidId,
+} from './utilities'
+
+export interface TableConfig<TableName extends string> {
+    tableName: TableName
+    softDelete?: boolean
+    hasPriority?: boolean
+}
 
 export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
-
     protected readonly dialect: SupportedDialect
     protected readonly sqlApi: ISQLApi
+    protected readonly tableName: TableName
+    protected readonly softDelete: boolean
+    protected readonly hasPriority: boolean
 
     constructor(
         protected readonly database: Kysely<DST>,
-        protected readonly tableName: TableName
+        tableNameOrConfig: TableName | TableConfig<TableName>,
     ) {
+        const cfg: TableConfig<TableName> =
+            typeof tableNameOrConfig === 'string'
+                ? {tableName: tableNameOrConfig}
+                : tableNameOrConfig
+
+        this.tableName = cfg.tableName
+        this.softDelete = cfg.softDelete ?? false
+        this.hasPriority = cfg.hasPriority ?? false
+
         const adapterName = (this.database as any).getExecutor().adapter.constructor.name
         if (adapterName === 'PostgresAdapter') {
             this.dialect = 'postgres'
@@ -39,14 +61,18 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
 
         createBuilder = addIdColumn(this.dialect, createBuilder)
 
-        createBuilder = createBuilder
-            .addColumn('priority', 'integer')
-            .addColumn('deleted_at', 'timestamp') // nullable
-            .addColumn(
-                'created_at',
-                this.dialect === 'postgres' ? 'timestamp' : 'timestamp',
-                (col) => col.notNull().defaultTo(sql.raw(createdAtDefaultSql()))
-            )
+        if (this.hasPriority) {
+            createBuilder = createBuilder.addColumn('priority', 'integer')
+        }
+        if (this.softDelete) {
+            createBuilder = createBuilder.addColumn('deleted_at', 'timestamp') // nullable
+        }
+
+        createBuilder = createBuilder.addColumn(
+            'created_at',
+            this.dialect === 'postgres' ? 'timestamp' : 'timestamp',
+            (col) => col.notNull().defaultTo(sql.raw(createdAtDefaultSql())),
+        )
 
         for (const column of this.extraColumns()) {
             createBuilder = createBuilder.addColumn(
@@ -62,7 +88,9 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
         }
 
         await createBuilder.execute()
-        await createPriorityIndex(this.db, this.tableName)
+        if (this.hasPriority) {
+            await createPriorityIndex(this.db, this.tableName)
+        }
     }
 
     // Add any newly declared extra columns to an existing table (forward-only)
@@ -71,15 +99,20 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
     }
 
     async create(values: Insertable<DST[TableName]>): Promise<Selectable<DST[TableName]>> {
-        const obj = (values as any)
+        const obj = values as any
         const providedPriority =
+            this.hasPriority &&
             obj.priority !== undefined &&
             obj.priority !== null &&
             Number.isInteger(obj.priority) &&
             obj.priority > 0
 
-        if (!providedPriority) {
-            obj.priority = null
+        if (this.hasPriority) {
+            if (!providedPriority) {
+                obj.priority = null
+            }
+        } else {
+            delete obj.priority
         }
 
         return await this.db.transaction().execute(async (trx) => {
@@ -89,7 +122,7 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
                 .returningAll()
                 .executeTakeFirstOrThrow()
 
-            if (!providedPriority) {
+            if (this.hasPriority && !providedPriority) {
                 await (trx.updateTable(this.tableName as string) as any)
                     .set({priority: sql`id`} as unknown as Updateable<DST[TableName]>)
                     .where('priority', 'is', null)
@@ -112,7 +145,9 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
     ): Promise<Selectable<DST[TableName]> | undefined> {
         ensureValidId(id)
         let query = this.db.selectFrom(this.tableName as string).selectAll().where('id', '=', id)
-        if (!options.includeDeleted) query = query.where('deleted_at', 'is', null)
+        if (this.softDelete && !options.includeDeleted) {
+            query = query.where('deleted_at', 'is', null)
+        }
         return (await query.executeTakeFirst()) as Selectable<DST[TableName]> | undefined
     }
 
@@ -124,7 +159,9 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
     } = {}): Promise<Array<Selectable<DST[TableName]>>> {
         const {includeDeleted, limit = 50, offset = 0, orderBy} = options
         let query = this.db.selectFrom(this.tableName as string).selectAll()
-        if (!includeDeleted) query = query.where('deleted_at', 'is', null)
+        if (this.softDelete && !includeDeleted) {
+            query = query.where('deleted_at', 'is', null)
+        }
         if (orderBy) query = query.orderBy(orderBy.column as string, orderBy.direction ?? 'asc')
         return (await query.limit(limit).offset(offset).execute()) as Array<Selectable<DST[TableName]>>
     }
@@ -144,6 +181,10 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
     // Soft delete
     async delete(id: number): Promise<Selectable<DST[TableName]> | undefined> {
         ensureValidId(id)
+        if (!this.softDelete) {
+            await this.permanentDelete(id)
+            return undefined
+        }
         return (await (this.db.updateTable(this.tableName) as any)
             .set({deleted_at: sql`CURRENT_TIMESTAMP`} as unknown as Updateable<DST[TableName]>)
             .where('id', '=', id)
@@ -153,6 +194,9 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
     }
 
     async restore(id: number): Promise<Selectable<DST[TableName]> | undefined> {
+        if (!this.softDelete) {
+            throw new Error('Soft delete feature not enabled')
+        }
         ensureValidId(id)
         return (await (this.db.updateTable(this.tableName) as any)
             .set({deleted_at: null} as unknown as Updateable<DST[TableName]>)
@@ -180,6 +224,9 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
         id: number,
         targetPriority: number
     ): Promise<Selectable<DST[TableName]>> {
+        if (!this.hasPriority) {
+            throw new Error('Priority feature not enabled')
+        }
         ensureValidId(id)
 
         if (!Number.isInteger(targetPriority) || targetPriority < 0) {

@@ -1,5 +1,5 @@
 import {Insertable, Kysely, Updateable, sql} from 'kysely'
-import {AbstractTable} from './AbstractTable'
+import {AbstractTable, TableConfig} from './AbstractTable'
 import {ColumnSpec, ColumnType} from './entities'
 
 export enum TTL {
@@ -30,9 +30,9 @@ export abstract class AbstractCacheTable<
 > extends AbstractTable<DST, TableName> {
     constructor(
         database: Kysely<DST>,
-        tableName: TableName,
+        tableNameOrConfig: TableName | TableConfig<TableName>,
     ) {
-        super(database, tableName)
+        super(database, tableNameOrConfig)
     }
 
     protected extraColumns(): ColumnSpec[] {

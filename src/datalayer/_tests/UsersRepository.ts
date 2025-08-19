@@ -5,7 +5,7 @@ import {ColumnSpec, ColumnType, DatabaseSchema} from "../entities";
 export class UsersRepository extends AbstractTable<DatabaseSchema, 'users'> {
 
     constructor(database: Kysely<DatabaseSchema>) {
-        super(database, 'users')
+        super(database, {tableName: 'users', softDelete: true, hasPriority: true})
     }
 
     protected extraColumns(): ColumnSpec[] {
