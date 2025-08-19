@@ -27,10 +27,25 @@ describe('AbstractJSONTable', () => {
     }
     const created = await table.createWithContent(config)
     expect(created.id).toBeDefined()
-    expect(created).toMatchObject({...config, priority: 0})
+    expect(created).toMatchObject({...config, priority: created.id})
 
     const fetched = await table.getByIdWithContent(created.id!)
     expect(fetched).toEqual(created)
+  })
+
+  test('create with explicit priority', async () => {
+    const config: DashboardConfiguration = {
+      type: 'DASHBOARD',
+      title: 'With priority',
+      description: 'example',
+      panelsIds: [],
+      variables: {},
+      priority: 5,
+    }
+    const created = await table.createWithContent(config)
+    expect(created).toMatchObject(config)
+    expect(created.id).toBeDefined()
+    expect(created.id).not.toBe(config.priority)
   })
 
   test('listWithContent returns all rows', async () => {

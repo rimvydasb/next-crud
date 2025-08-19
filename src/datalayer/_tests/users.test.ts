@@ -20,7 +20,7 @@ describe('UsersRepository CRUD', () => {
     test('create and read user', async () => {
         const created = await repo.create({name: 'John', surname: 'Doe', telephone_number: '123'})
         const fetched = await repo.getById(created.id)
-        expect(fetched).toMatchObject({name: 'John', surname: 'Doe', telephone_number: '123', priority: 0})
+        expect(fetched).toMatchObject({name: 'John', surname: 'Doe', telephone_number: '123', priority: created.id})
     })
 
     test('update user', async () => {
