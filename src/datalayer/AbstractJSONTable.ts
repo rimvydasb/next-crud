@@ -1,5 +1,5 @@
 import {Insertable, Kysely, Selectable, Updateable} from 'kysely'
-import {AbstractTable} from './AbstractTable'
+import {AbstractTable, TableConfig} from './AbstractTable'
 import {ColumnSpec, ColumnType} from './entities'
 import {IJSONContent} from './IJSONContent'
 
@@ -13,10 +13,10 @@ export abstract class AbstractJSONTable<DST, TableName extends keyof DST & strin
 
     constructor(
         database: Kysely<DST>,
-        tableName: TableName,
+        tableNameOrConfig: TableName | TableConfig<TableName>,
         supportedTypes: string[],
     ) {
-        super(database, tableName)
+        super(database, tableNameOrConfig)
         this.supportedTypes = supportedTypes
     }
 

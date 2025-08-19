@@ -1,6 +1,7 @@
 import {Kysely} from 'kysely'
-import {UsersRepository} from "./UsersRepository";
-import {DatabaseSchema} from "../entities";
+import {UsersRepository} from './UsersRepository'
+import {DatabaseSchema, ColumnSpec, ColumnType} from '../entities'
+import {AbstractTable} from '../AbstractTable'
 import {createTestDb} from '../../testDb'
 
 describe('UsersRepository CRUD', () => {
@@ -55,5 +56,43 @@ describe('UsersRepository CRUD', () => {
         await repo.updatePriority(u3.id, 1)
         const list = await repo.list({orderBy: {column: 'priority'}})
         expect(list.map((u) => u.id)).toEqual([u1.id, u3.id, u2.id])
+    })
+})
+
+describe('AbstractTable feature toggles', () => {
+    class UsersRepositoryNoFeatures extends AbstractTable<DatabaseSchema, 'users'> {
+        constructor(db: Kysely<DatabaseSchema>) {
+            super(db, 'users')
+        }
+        protected extraColumns(): ColumnSpec[] {
+            return [
+                {name: 'name', type: ColumnType.STRING, notNull: true},
+                {name: 'surname', type: ColumnType.STRING, notNull: true},
+                {name: 'telephone_number', type: ColumnType.STRING, notNull: true},
+            ]
+        }
+    }
+
+    let db: Kysely<DatabaseSchema>
+    let repo: UsersRepositoryNoFeatures
+
+    beforeEach(async () => {
+        db = await createTestDb()
+        repo = new UsersRepositoryNoFeatures(db)
+        await repo.ensureSchema()
+    })
+
+    afterEach(async () => {
+        await db.destroy()
+    })
+
+    test('delete is permanent and priority disabled', async () => {
+        const created = await repo.create({name: 'X', surname: 'Y', telephone_number: '1'})
+        await repo.delete(created.id)
+        const fetched = await repo.getById(created.id, {includeDeleted: true})
+        expect(fetched).toBeUndefined()
+
+        const c2 = await repo.create({name: 'A', surname: 'B', telephone_number: '2'})
+        await expect(repo.updatePriority(c2.id, 1)).rejects.toThrow('Priority feature not enabled')
     })
 })
