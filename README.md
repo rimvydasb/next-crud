@@ -46,12 +46,12 @@ export default (req: NextApiRequest, res: NextApiResponse) =>
 
 ### AbstractCacheTable
 
-Simple cache table with TTL helpers.
+Simple cache table with TTL helpers. Pass a table name or an object to enable features.
 
 ```ts
 class RequestCache extends AbstractCacheTable<DatabaseSchema, 'request_data_cache'> {
   constructor(db: Kysely<DatabaseSchema>) {
-    super(db, 'request_data_cache')
+    super(db, { tableName: 'request_data_cache', softDelete: true, hasPriority: true }) // or super(db, 'request_data_cache')
   }
 }
 
