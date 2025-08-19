@@ -7,7 +7,7 @@ import type {DatabaseSchema} from './datalayer/entities'
  * By default an in-memory SQLite database is used. If the USE_PG_TESTS flag is
  * truthy, a Postgres database running on localhost:5435 with the
  * credentials `test_user`/`password` and database `test_db` is used instead.
- * The connection operates inside the "test" schema which is dropped and
+ * The connection operates inside a unique test schema which is dropped and
  * recreated for every invocation.
  */
 export async function createTestDb(): Promise<Kysely<DatabaseSchema>> {
@@ -29,12 +29,12 @@ export async function createTestDb(): Promise<Kysely<DatabaseSchema>> {
         if (result.rows.length === 0) {
             throw new Error('Failed to connect to the Postgres test database')
         }
+        // Generate a unique schema name to avoid conflicts between parallel tests
+        const schemaName = `test_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
         // Ensure a clean test schema for each run
-        await sql`DROP
-        SCHEMA IF EXISTS test CASCADE`.execute(db)
-        await sql`CREATE
-        SCHEMA test`.execute(db)
-        await sql`SET search_path TO test`.execute(db)
+        await sql.raw(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`).execute(db)
+        await sql.raw(`CREATE SCHEMA "${schemaName}"`).execute(db)
+        await sql.raw(`SET search_path TO "${schemaName}"`).execute(db)
         return db
     }
 
