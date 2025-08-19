@@ -26,13 +26,13 @@ export function addIdColumn<T extends DatabaseSchema>(
     return builder.addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
 }
 
-// Create a unique index on priority in a portable way
-export async function createUniquePriorityIndex<T extends DatabaseSchema>(
+// Create a non-unique index on priority in a portable way
+export async function createPriorityIndex<T extends DatabaseSchema>(
     db: Kysely<T>,
     tableName: keyof T
 ) {
-    const indexName = `${String(tableName)}_priority_key`
-    await sql`CREATE UNIQUE INDEX IF NOT EXISTS ${sql.raw(indexName)} ON ${sql.raw(
+    const indexName = `${String(tableName)}_priority_idx`
+    await sql`CREATE INDEX IF NOT EXISTS ${sql.raw(indexName)} ON ${sql.raw(
             String(tableName)
     )} (priority)`.execute(db)
 }

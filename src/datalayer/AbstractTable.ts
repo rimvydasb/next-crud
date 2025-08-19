@@ -1,7 +1,7 @@
 import {Insertable, Kysely, Selectable, sql, Updateable} from 'kysely'
 import {ColumnSpec, SupportedDialect} from "./entities";
 import {ISQLApi, createSqlApi} from "./sqlapi/ISQLApi";
-import {addIdColumn, createdAtDefaultSql, createUniquePriorityIndex, ensureValidId} from "./utilities";
+import {addIdColumn, createdAtDefaultSql, createPriorityIndex, ensureValidId} from "./utilities";
 
 export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
 
@@ -40,7 +40,7 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
         createBuilder = addIdColumn(this.dialect, createBuilder)
 
         createBuilder = createBuilder
-            .addColumn('priority', 'integer', (col) => col.notNull().defaultTo(0))
+            .addColumn('priority', 'integer')
             .addColumn('deleted_at', 'timestamp') // nullable
             .addColumn(
                 'created_at',
@@ -62,7 +62,7 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
         }
 
         await createBuilder.execute()
-        await createUniquePriorityIndex(this.db, this.tableName)
+        await createPriorityIndex(this.db, this.tableName)
     }
 
     // Add any newly declared extra columns to an existing table (forward-only)
@@ -71,11 +71,39 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
     }
 
     async create(values: Insertable<DST[TableName]>): Promise<Selectable<DST[TableName]>> {
-        return (await this.database
-            .insertInto(this.tableName)
-            .values(values)
-            .returningAll()
-            .executeTakeFirstOrThrow()) as Selectable<DST[TableName]>
+        const obj = (values as any)
+        const providedPriority =
+            obj.priority !== undefined &&
+            obj.priority !== null &&
+            Number.isInteger(obj.priority) &&
+            obj.priority > 0
+
+        if (!providedPriority) {
+            obj.priority = null
+        }
+
+        return await this.db.transaction().execute(async (trx) => {
+            const created = await trx
+                .insertInto(this.tableName)
+                .values(values)
+                .returningAll()
+                .executeTakeFirstOrThrow()
+
+            if (!providedPriority) {
+                await (trx.updateTable(this.tableName as string) as any)
+                    .set({priority: sql`id`} as unknown as Updateable<DST[TableName]>)
+                    .where('priority', 'is', null)
+                    .execute()
+
+                return (await trx
+                    .selectFrom(this.tableName as string)
+                    .selectAll()
+                    .where('id', '=', (created as any).id)
+                    .executeTakeFirstOrThrow()) as Selectable<DST[TableName]>
+            }
+
+            return created as Selectable<DST[TableName]>
+        })
     }
 
     async getById(
