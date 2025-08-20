@@ -29,9 +29,7 @@ export async function createTestDb(): Promise<Kysely<DatabaseSchema>> {
         if (result.rows.length === 0) {
             throw new Error('Failed to connect to the Postgres test database')
         }
-        // Generate a unique schema name to avoid conflicts between parallel tests
-        const schemaName = `test_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
-        // Ensure a clean test schema for each run
+        const schemaName = `test_db`
         await sql.raw(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`).execute(db)
         await sql.raw(`CREATE SCHEMA "${schemaName}"`).execute(db)
         await sql.raw(`SET search_path TO "${schemaName}"`).execute(db)
