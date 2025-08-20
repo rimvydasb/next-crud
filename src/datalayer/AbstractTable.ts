@@ -1,18 +1,19 @@
-import {Insertable, Kysely, Selectable, sql, Updateable} from 'kysely'
-import {ColumnSpec, SupportedDialect} from './entities'
-import {ISQLApi, createSqlApi} from './sqlapi/ISQLApi'
-import {
-    addIdColumn,
-    createdAtDefaultSql,
-    createPriorityIndex,
-    detectDialect,
-    ensureValidId,
-} from './utilities'
+import {Generated, Insertable, Kysely, Selectable, sql, Updateable} from 'kysely'
+import {ColumnSpec, NullableTimestampDefault, PriorityColumn, SupportedDialect, TimestampDefault} from './entities'
+import {createSqlApi, ISQLApi} from './sqlapi/ISQLApi'
+import {addIdColumn, createdAtDefaultSql, createPriorityIndex, detectDialect, ensureValidId,} from './utilities'
 
 export interface TableConfig<TableName extends string> {
     tableName: TableName
     softDelete?: boolean
     hasPriority?: boolean
+}
+
+export interface BaseTable {
+    id: Generated<number>
+    priority: PriorityColumn
+    deleted_at: NullableTimestampDefault
+    created_at: TimestampDefault
 }
 
 export abstract class AbstractTable<DST, TableName extends keyof DST & string> {

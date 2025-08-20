@@ -1,7 +1,7 @@
-import {Insertable, Kysely, Updateable, sql} from 'kysely'
-import {ColumnSpec, ColumnType, SupportedDialect} from './entities'
+import {Generated, Insertable, Kysely, sql, Updateable} from 'kysely'
+import {ColumnSpec, ColumnType, SupportedDialect, TimestampDefault} from './entities'
 import {addIdColumn, createdAtDefaultSql, detectDialect} from './utilities'
-import {ISQLApi, createSqlApi} from './sqlapi/ISQLApi'
+import {createSqlApi, ISQLApi} from './sqlapi/ISQLApi'
 
 export enum TTL {
     ONE_HOUR = 3600,
@@ -310,4 +310,13 @@ export abstract class AbstractCacheTable<DST, TableName extends keyof DST & stri
         }
         return value as T
     }
+}
+
+export interface CacheBaseTable {
+    id: Generated<number>
+    key: string
+    type: string
+    content: unknown
+    expired: boolean | number | null
+    created_at: TimestampDefault
 }

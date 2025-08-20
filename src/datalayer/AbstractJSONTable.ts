@@ -1,5 +1,5 @@
 import {Insertable, Kysely, Selectable, Updateable} from 'kysely'
-import {AbstractTable, TableConfig} from './AbstractTable'
+import {AbstractTable, BaseTable, TableConfig} from './AbstractTable'
 import {ColumnSpec, ColumnType} from './entities'
 import {IJSONContent} from './IJSONContent'
 
@@ -116,4 +116,9 @@ export abstract class AbstractJSONTable<DST, TableName extends keyof DST & strin
         const row = await super.update(id, updateData as Updateable<DST[TableName]>)
         return row ? this.fromRow(row) : undefined
     }
+}
+
+export interface JSONContentBaseTable extends BaseTable {
+    type: string
+    content: unknown
 }

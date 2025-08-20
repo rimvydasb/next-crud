@@ -1,4 +1,4 @@
-import {ColumnType as KyselyColumnType, Generated} from "kysely";
+import {ColumnType as KyselyColumnType} from "kysely";
 
 export type SupportedDialect = 'postgres' | 'sqlite'
 
@@ -10,23 +10,6 @@ export type NullableTimestampDefault = KyselyColumnType<
     Date | string | null | undefined
 >
 export type PriorityColumn = KyselyColumnType<number, number | undefined, number | undefined>
-
-export interface BaseTable {
-    id: Generated<number>
-    priority: PriorityColumn
-    deleted_at: NullableTimestampDefault
-    created_at: TimestampDefault
-}
-
-// Base structure for cache tables used in tests
-export interface CacheBaseTable {
-    id: Generated<number>
-    key: string
-    type: string
-    content: unknown
-    expired: boolean | number | null
-    created_at: TimestampDefault
-}
 
 export enum ColumnType {
     // Maps to varchar(255) in Postgres and TEXT in SQLite

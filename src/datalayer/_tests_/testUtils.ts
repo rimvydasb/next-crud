@@ -1,10 +1,10 @@
 import type {NextApiRequest, NextApiResponse} from 'next'
-import {AbstractCacheTable} from "@datalayer/AbstractCacheTable";
-import {BaseTable, CacheBaseTable, ColumnSpec, ColumnType} from "@datalayer/entities";
+import {AbstractCacheTable, CacheBaseTable} from "@datalayer/AbstractCacheTable";
+import {ColumnSpec, ColumnType} from "@datalayer/entities";
 import {Kysely, PostgresDialect, sql, SqliteDialect} from "kysely";
-import {AbstractTable} from "@datalayer/AbstractTable";
+import {AbstractTable, BaseTable} from "@datalayer/AbstractTable";
 import {IJSONContent} from "@datalayer/IJSONContent";
-import {AbstractJSONTable} from "@datalayer/AbstractJSONTable";
+import {AbstractJSONTable, JSONContentBaseTable} from "@datalayer/AbstractJSONTable";
 import BetterSqlite3 from "better-sqlite3";
 import {Pool} from "pg";
 
@@ -79,11 +79,6 @@ export interface RequestDataCacheTable extends CacheBaseTable {
     metadata: unknown | null
 }
 
-export interface DashboardConfigurationTable extends BaseTable {
-    type: string
-    content: unknown
-}
-
 export interface UsersTable extends BaseTable {
     name: string
     surname: string
@@ -93,7 +88,7 @@ export interface UsersTable extends BaseTable {
 export interface DatabaseSchema {
     users: UsersTable
     request_data_cache: RequestDataCacheTable
-    dashboard_configuration: DashboardConfigurationTable
+    dashboard_configuration: JSONContentBaseTable
 }
 
 /**
