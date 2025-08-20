@@ -25,14 +25,20 @@ export interface UsersTable extends BaseTable {
     telephone_number: string
 }
 
-// @Todo: RequestDataCacheTable is just for testing, refactor it
-export interface RequestDataCacheTable extends BaseTable {
-    request_url: string
-    reference: string | null
+// Base structure for cache tables used in tests
+export interface CacheBaseTable {
+    id: Generated<number>
+    key: string
     type: string
-    data: unknown
-    metadata: unknown | null
+    content: unknown
     expired: boolean | number | null
+    created_at: TimestampDefault
+}
+
+// @Todo: RequestDataCacheTable is just for testing, refactor it
+export interface RequestDataCacheTable extends CacheBaseTable {
+    reference: string | null
+    metadata: unknown | null
 }
 
 // @Todo: DashboardConfigurationTable is just for testing, refactor it
