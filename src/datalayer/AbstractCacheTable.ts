@@ -1,6 +1,6 @@
 import {Insertable, Kysely, Updateable, sql} from 'kysely'
 import {ColumnSpec, ColumnType, SupportedDialect} from './entities'
-import {addIdColumn, createdAtDefaultSql} from './utilities'
+import {addIdColumn, createdAtDefaultSql, detectDialect} from './utilities'
 import {ISQLApi, createSqlApi} from './sqlapi/ISQLApi'
 
 export enum TTL {
@@ -31,14 +31,7 @@ export abstract class AbstractCacheTable<DST, TableName extends keyof DST & stri
 
     constructor(protected readonly database: Kysely<DST>, tableName: TableName) {
         this.tableName = tableName
-        const adapterName = (this.database as any).getExecutor().adapter.constructor.name
-        if (adapterName === 'PostgresAdapter') {
-            this.dialect = 'postgres'
-        } else if (adapterName === 'SqliteAdapter') {
-            this.dialect = 'sqlite'
-        } else {
-            throw new Error('Unsupported dialect')
-        }
+        this.dialect = detectDialect(this.database)
         this.sqlApi = createSqlApi(this.dialect)
     }
 
