@@ -5,6 +5,7 @@ import {
     addIdColumn,
     createdAtDefaultSql,
     createPriorityIndex,
+    detectDialect,
     ensureValidId,
 } from './utilities'
 
@@ -34,14 +35,7 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
         this.softDelete = cfg.softDelete ?? false
         this.hasPriority = cfg.hasPriority ?? false
 
-        const adapterName = (this.database as any).getExecutor().adapter.constructor.name
-        if (adapterName === 'PostgresAdapter') {
-            this.dialect = 'postgres'
-        } else if (adapterName === 'SqliteAdapter') {
-            this.dialect = 'sqlite'
-        } else {
-            throw new Error('Unsupported dialect')
-        }
+        this.dialect = detectDialect(this.database)
         this.sqlApi = createSqlApi(this.dialect)
     }
 

@@ -1,6 +1,19 @@
 import {DatabaseSchema, SupportedDialect} from "./entities";
 import {Kysely, sql} from "kysely";
 
+export function detectDialect(db: Kysely<any>): SupportedDialect {
+    const adapterName = (db as any).getExecutor().adapter.constructor.name
+    if (adapterName === 'PostgresAdapter') return 'postgres'
+    if (adapterName === 'SqliteAdapter') return 'sqlite'
+import {Kysely, sql, PostgresAdapter, SqliteAdapter} from "kysely";
+
+export function detectDialect(db: Kysely<any>): SupportedDialect {
+    const adapter = (db as any).getExecutor().adapter;
+    if (adapter instanceof PostgresAdapter) return 'postgres';
+    if (adapter instanceof SqliteAdapter) return 'sqlite';
+    throw new Error('Unsupported dialect');
+}
+
 export function ensureValidId(id: unknown): asserts id is number {
     if (typeof id !== 'number' || !Number.isFinite(id) || !Number.isInteger(id) || id <= 0) {
         throw new Error('Invalid id: must be a finite integer > 0')
