@@ -100,7 +100,7 @@ export abstract class AbstractCacheTable<DST, TableName extends keyof DST & stri
         return Number(n)
     }
 
-    async cleanExpiredEntries(select: Record<string, any>): Promise<number> {
+    async cleanExpiredEntries(select: Partial<CacheEntry<any>>): Promise<number> {
         this.ensureSelectNotEmpty(select)
         const qb = this.applyFilters(
             this.db.deleteFrom(this.tableName as string),
@@ -112,7 +112,7 @@ export abstract class AbstractCacheTable<DST, TableName extends keyof DST & stri
         return Number(n)
     }
 
-    async getLast<T>(select: Record<string, any>, ttl?: TTL): Promise<T | null> {
+    async getLast<T>(select: Partial<CacheEntry<T>>, ttl?: TTL): Promise<T | null> {
         this.ensureSelectNotEmpty(select)
 
         let qb = this.applyFilters(
@@ -131,7 +131,7 @@ export abstract class AbstractCacheTable<DST, TableName extends keyof DST & stri
         return this.decodeJson<T>(val)
     }
 
-    async getAll<T>(select: Record<string, any>, ttl?: TTL): Promise<CacheEntry<T>[]> {
+    async getAll<T>(select: Partial<CacheEntry<T>>, ttl?: TTL): Promise<CacheEntry<T>[]> {
         this.ensureSelectNotEmpty(select)
 
         const extra = this.extraColumns().map((c) => c.name)
@@ -168,7 +168,7 @@ export abstract class AbstractCacheTable<DST, TableName extends keyof DST & stri
 
     // check if entry exists with a given select without retrieving
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async isCached<T>(select: Record<string, any>, ttl?: TTL): Promise<boolean> {
+    async isCached<T>(select: Partial<CacheEntry<T>>, ttl?: TTL): Promise<boolean> {
         this.ensureSelectNotEmpty(select)
 
         let qb = this.applyFilters(
@@ -228,13 +228,13 @@ export abstract class AbstractCacheTable<DST, TableName extends keyof DST & stri
         }
     }
 
-    protected ensureSelectNotEmpty(select: Record<string, any>) {
+    protected ensureSelectNotEmpty(select: Partial<CacheEntry<any>>) {
         if (!select || Object.values(select).every((v) => v === undefined)) {
             throw new Error('No values provided for where clause')
         }
     }
 
-    protected applyFilters<T extends {where: any}>(qb: T, select: Record<string, any>): T {
+    protected applyFilters<T extends {where: any}>(qb: T, select: Partial<CacheEntry<any>>): T {
         let out: any = qb
         for (const [k, v] of Object.entries(select)) {
             if (v !== undefined) out = out.where(k, '=', v)
