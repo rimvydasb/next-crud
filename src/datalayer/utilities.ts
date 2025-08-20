@@ -1,5 +1,5 @@
-import {DatabaseSchema, SupportedDialect} from "./entities";
-import {Kysely, sql, PostgresAdapter, SqliteAdapter} from "kysely";
+import {SupportedDialect} from "./entities";
+import {Kysely, PostgresAdapter, sql, SqliteAdapter} from "kysely";
 
 export function detectDialect(db: Kysely<any>): SupportedDialect {
     const adapter = (db as any).getExecutor().adapter;
@@ -21,10 +21,7 @@ export function createdAtDefaultSql(): string {
 }
 
 // Map base id column by dialect
-export function addIdColumn<T extends DatabaseSchema>(
-    dialect: SupportedDialect,
-    builder: ReturnType<Kysely<T>['schema']['createTable']>
-) {
+export function addIdColumn(dialect: SupportedDialect, builder: ReturnType<Kysely<any>['schema']['createTable']>) {
     if (dialect === 'postgres') {
         // Use 'serial' for Postgres to ensure the id is mapped as a JavaScript number (32-bit integer).
         return builder.addColumn('id', 'serial', (col) => col.primaryKey())
@@ -34,10 +31,7 @@ export function addIdColumn<T extends DatabaseSchema>(
 }
 
 // Create a non-unique index on priority in a portable way
-export async function createPriorityIndex<T extends DatabaseSchema>(
-    db: Kysely<T>,
-    tableName: keyof T
-) {
+export async function createPriorityIndex(db: Kysely<any>, tableName: string) {
     const indexName = `${String(tableName)}_priority_idx`
     await sql`CREATE INDEX IF NOT EXISTS ${sql.raw(indexName)} ON ${sql.raw(
             String(tableName)

@@ -18,13 +18,6 @@ export interface BaseTable {
     created_at: TimestampDefault
 }
 
-// @Todo: UsersTable is just for testing, refactor it
-export interface UsersTable extends BaseTable {
-    name: string
-    surname: string
-    telephone_number: string
-}
-
 // Base structure for cache tables used in tests
 export interface CacheBaseTable {
     id: Generated<number>
@@ -33,25 +26,6 @@ export interface CacheBaseTable {
     content: unknown
     expired: boolean | number | null
     created_at: TimestampDefault
-}
-
-// @Todo: RequestDataCacheTable is just for testing, refactor it
-export interface RequestDataCacheTable extends CacheBaseTable {
-    reference: string | null
-    metadata: unknown | null
-}
-
-// @Todo: DashboardConfigurationTable is just for testing, refactor it
-export interface DashboardConfigurationTable extends BaseTable {
-    type: string
-    content: unknown
-}
-
-// @Todo: this DatabaseSchema is just for testing, refactor it, next-crud API user will provide their own schema
-export interface DatabaseSchema {
-    users: UsersTable
-    request_data_cache: RequestDataCacheTable
-    dashboard_configuration: DashboardConfigurationTable
 }
 
 export enum ColumnType {

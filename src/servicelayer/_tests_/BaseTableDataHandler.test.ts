@@ -1,9 +1,6 @@
 import {Kysely} from "kysely"
-import {DatabaseSchema} from "@datalayer/entities"
 import {BaseTableDataHandler} from "@servicelayer/BaseTableDataHandler";
-import {UsersRepository} from "@datalayer/_tests/UsersRepository";
-import {createTestDb} from "../testDb"
-import {createMock} from '@servicelayer/testUtils'
+import {createMock, createTestDb, DatabaseSchema, UsersRepository} from "@datalayer/_tests_/testUtils";
 
 // We'll reuse the same in-memory database instance for each handler call so
 // that data persists across multiple requests within a test case.

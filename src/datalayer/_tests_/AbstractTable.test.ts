@@ -1,8 +1,7 @@
 import {Kysely} from 'kysely'
-import {UsersRepository} from './UsersRepository'
-import {DatabaseSchema, ColumnSpec, ColumnType} from '../entities'
+import {ColumnSpec, ColumnType} from '../entities'
 import {AbstractTable} from '../AbstractTable'
-import {createTestDb} from '../../testDb'
+import {createTestDb, DatabaseSchema, UsersRepository} from "@datalayer/_tests_/testUtils";
 
 describe('UsersRepository CRUD', () => {
     let db: Kysely<DatabaseSchema>

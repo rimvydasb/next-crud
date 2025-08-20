@@ -1,9 +1,7 @@
 import {Kysely} from 'kysely'
-import {DatabaseSchema} from '@datalayer/entities'
+import {createTestDb, DatabaseSchema} from '@datalayer/_tests_/testUtils'
 import {JSONTableDataHandler} from '@servicelayer/JSONTableDataHandler'
-import {DashboardConfigurationTable, DashboardConfiguration} from '@datalayer/_tests/DashboardConfigurationTable'
-import {createTestDb} from '../testDb'
-import {createMock} from '@servicelayer/testUtils'
+import {createMock, DashboardConfiguration, DashboardConfigurationRepository} from "@datalayer/_tests_/testUtils";
 
 let db: Kysely<DatabaseSchema>
 
@@ -12,8 +10,8 @@ class DashboardHandler extends JSONTableDataHandler<DatabaseSchema, 'dashboard_c
         return Promise.resolve(db)
     }
 
-    protected async getTable(): Promise<DashboardConfigurationTable> {
-        const repo = new DashboardConfigurationTable(await this.getDb())
+    protected async getTable(): Promise<DashboardConfigurationRepository> {
+        const repo = new DashboardConfigurationRepository(await this.getDb())
         await repo.ensureSchema()
         return repo
     }
@@ -42,7 +40,7 @@ describe('JSONTableDataHandler CRUD flow', () => {
         const created = (res as any).data[0] as DashboardConfiguration
         expect(created).toMatchObject({title: 'Main'})
 
-        const repo = new DashboardConfigurationTable(db)
+        const repo = new DashboardConfigurationRepository(db)
         await repo.ensureSchema()
         const inDb = await repo.getByIdWithContent(created.id!)
         expect(inDb?.title).toBe('Main')
@@ -50,7 +48,7 @@ describe('JSONTableDataHandler CRUD flow', () => {
 
     test('fetches a dashboard configuration', async () => {
         expect.assertions(2)
-        const repo = new DashboardConfigurationTable(db)
+        const repo = new DashboardConfigurationRepository(db)
         await repo.ensureSchema()
         const created = await repo.createWithContent({
             type: 'DASHBOARD',
@@ -68,7 +66,7 @@ describe('JSONTableDataHandler CRUD flow', () => {
 
     test('updates a dashboard configuration', async () => {
         expect.assertions(3)
-        const repo = new DashboardConfigurationTable(db)
+        const repo = new DashboardConfigurationRepository(db)
         await repo.ensureSchema()
         const created = await repo.createWithContent({
             type: 'DASHBOARD',
@@ -88,7 +86,7 @@ describe('JSONTableDataHandler CRUD flow', () => {
 
     test('deletes a dashboard configuration', async () => {
         expect.assertions(3)
-        const repo = new DashboardConfigurationTable(db)
+        const repo = new DashboardConfigurationRepository(db)
         await repo.ensureSchema()
         const created = await repo.createWithContent({
             type: 'DASHBOARD',
