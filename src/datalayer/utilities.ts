@@ -2,8 +2,8 @@ import {DatabaseSchema, SupportedDialect} from "./entities";
 import {Kysely, sql} from "kysely";
 
 export function ensureValidId(id: unknown): asserts id is number {
-    if (typeof id !== 'number' || !Number.isFinite(id) || id <= 0) {
-        throw new Error('Invalid id: must be a finite number > 0')
+    if (typeof id !== 'number' || !Number.isFinite(id) || !Number.isInteger(id) || id <= 0) {
+        throw new Error('Invalid id: must be a finite integer > 0')
     }
 }
 

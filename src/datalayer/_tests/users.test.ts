@@ -48,6 +48,10 @@ describe('UsersRepository CRUD', () => {
         expect(fetched).toBeUndefined()
     })
 
+    test('getById rejects non-integer id', async () => {
+        await expect(repo.getById(1.5)).rejects.toThrow('Invalid id')
+    })
+
     // This test does not work. Disabling for now.
     xtest('update priority shifts others', async () => {
         const u1 = await repo.create({name: 'A', surname: 'A', telephone_number: '1', priority: 0})
