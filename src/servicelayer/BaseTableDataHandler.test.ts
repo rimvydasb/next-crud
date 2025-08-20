@@ -1,34 +1,9 @@
-import type {NextApiRequest, NextApiResponse} from 'next'
 import {Kysely} from "kysely"
 import {DatabaseSchema} from "@datalayer/entities"
 import {BaseTableDataHandler} from "@servicelayer/BaseTableDataHandler";
 import {UsersRepository} from "@datalayer/_tests/UsersRepository";
 import {createTestDb} from "../testDb"
-
-// Simple helper to create mock Next.js request/response objects
-function createMock(method: string, body: any = {}, query: any = {}) {
-    const req = {method, body, query} as unknown as NextApiRequest
-    const res: any = {
-        statusCode: 0,
-        data: undefined as any,
-        status(code: number) {
-            this.statusCode = code
-            return this
-        },
-        json(payload: any) {
-            this.data = payload
-            return this
-        },
-        end() {
-            return this
-        },
-        setHeader() {
-            /* no-op for tests */
-        },
-        statusMessage: '',
-    }
-    return {req, res: res as NextApiResponse}
-}
+import {createMock} from '@servicelayer/testUtils'
 
 // We'll reuse the same in-memory database instance for each handler call so
 // that data persists across multiple requests within a test case.
