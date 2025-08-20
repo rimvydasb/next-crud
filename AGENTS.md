@@ -27,8 +27,9 @@
 
 ## Repo Structure
 - `src/datalayer/**`: database API.
+- `src/datalayer/_tests_/**`: database API tests.
 - `src/servicelayer/**`: Next.js REST API.
-- Tests live alongside implementation files with `.test.ts` suffix.
+- `src/servicelayer/_tests_/**`: Next.js REST API tests.
 
 ## Security
 - Never commit secrets; use `.env.example`.
