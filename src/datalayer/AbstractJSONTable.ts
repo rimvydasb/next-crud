@@ -118,7 +118,7 @@ export abstract class AbstractJSONTable<DST, TableName extends keyof DST & strin
     }
 }
 
-export interface JSONContentBaseTable extends BaseTable {
+export interface JSONContentBaseTable<T> extends BaseTable {
     type: string
-    content: unknown
+    content: T
 }

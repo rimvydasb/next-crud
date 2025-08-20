@@ -88,7 +88,7 @@ export interface UsersTable extends BaseTable {
 export interface DatabaseSchema {
     users: UsersTable
     request_data_cache: RequestDataCacheTable
-    dashboard_configuration: JSONContentBaseTable
+    dashboard_configuration: JSONContentBaseTable<DashboardConfiguration>
 }
 
 /**
