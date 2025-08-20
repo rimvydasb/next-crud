@@ -1,5 +1,5 @@
 import {Kysely, sql} from 'kysely'
-import RequestDataRepository, {CacheEntry, CacheEntryKey, TTL} from '@datalayer/RequestDataRepository'
+import RequestDataRepository, {TTL, CacheEntry} from '@datalayer/RequestDataRepository'
 import {DatabaseSchema} from "../entities";
 import {createTestDb} from '../../testDb'
 
@@ -12,8 +12,8 @@ describe('DatabaseRequestDataCache', () => {
             ? sql`now() - make_interval(secs => ${seconds})`
             : sql`datetime('now', '-' || ${seconds} || ' seconds')`
 
-    const sampleKey: CacheEntryKey = {
-        requestUrl: 'https://api.example.com/data',
+    const sampleKey = {
+        key: 'https://api.example.com/data',
         type: 'sampleType',
         reference: 'ref123',
     }
@@ -32,50 +32,50 @@ describe('DatabaseRequestDataCache', () => {
     })
 
     it('save() should insert and return true', async () => {
-        const ok = await cache.save(sampleKey, sampleData, sampleMeta)
+        const ok = await cache.save({...sampleKey, metadata: sampleMeta}, sampleData)
         expect(ok).toBe(true)
         const rows = await db
             .selectFrom('request_data_cache')
-            .select(['request_url', 'type', 'reference', 'data', 'metadata'])
+            .select(['key', 'type', 'reference', 'content', 'metadata'])
             .execute()
         expect(rows).toHaveLength(1)
         const row = rows[0] as any
-        expect(row.request_url).toBe(sampleKey.requestUrl)
+        expect(row.key).toBe(sampleKey.key)
         expect(row.type).toBe(sampleKey.type)
         expect(row.reference).toBe(sampleKey.reference)
         if (dialect === 'postgres') {
-            expect(row.data).toEqual(sampleData)
+            expect(row.content).toEqual(sampleData)
             expect(row.metadata).toEqual(sampleMeta)
         } else {
-            expect(JSON.parse(row.data)).toEqual(sampleData)
+            expect(JSON.parse(row.content)).toEqual(sampleData)
             expect(JSON.parse(row.metadata)).toEqual(sampleMeta)
         }
     })
 
-    it('get() should return null when no entry exists', async () => {
-        const result = await cache.get(sampleKey)
+    it('getLast() should return null when no entry exists', async () => {
+        const result = await cache.getLast(sampleKey)
         expect(result).toBeNull()
     })
 
-    it('get() and getAll() should retrieve saved entry', async () => {
-        await cache.save(sampleKey, sampleData, sampleMeta)
-        const got = await cache.get<typeof sampleData>(sampleKey)
+    it('getLast() and getAll() should retrieve saved entry', async () => {
+        await cache.save({...sampleKey, metadata: sampleMeta}, sampleData)
+        const got = await cache.getLast<typeof sampleData>(sampleKey)
         expect(got).toEqual(sampleData)
         const all = await cache.getAll<typeof sampleData>(sampleKey)
         expect(all.length).toBe(1)
         const entry: CacheEntry<typeof sampleData> = all[0]
-        expect(entry.requestUrl).toBe(sampleKey.requestUrl)
+        expect(entry.key).toBe(sampleKey.key)
         expect(entry.type).toBe(sampleKey.type)
         expect(entry.reference).toBe(sampleKey.reference)
-        expect(entry.data).toEqual(sampleData)
+        expect(entry.content).toEqual(sampleData)
         expect(entry.metadata).toEqual(sampleMeta)
         expect(entry.createdAt).toBeInstanceOf(Date)
     })
 
     it('getAll() with different TTL', async () => {
-        await cache.save({requestUrl: 'url1', type: 'TRANSACT', reference: 'expired'}, {a: 1}, {})
-        await cache.save({requestUrl: 'url2', type: 'TRANSACT', reference: 'fine'}, {a: 1}, {})
-        await cache.save({requestUrl: 'url3', type: 'TRANSACT', reference: 'outdated'}, {a: 1}, {})
+        await cache.save({key: 'url1', type: 'TRANSACT', reference: 'expired'}, {a: 1})
+        await cache.save({key: 'url2', type: 'TRANSACT', reference: 'fine'}, {a: 1})
+        await cache.save({key: 'url3', type: 'TRANSACT', reference: 'outdated'}, {a: 1})
 
         await db
             .updateTable('request_data_cache')
@@ -122,8 +122,8 @@ describe('DatabaseRequestDataCache', () => {
         }
     })
 
-    it('get() with TTL should skip old entries', async () => {
-        await cache.save(sampleKey, {x: 1}, {})
+    it('getLast() with TTL should skip old entries', async () => {
+        await cache.save(sampleKey, {x: 1})
         await db
             .updateTable('request_data_cache')
             .set({
@@ -131,21 +131,37 @@ describe('DatabaseRequestDataCache', () => {
             })
             .execute()
 
-        const noTtl = await cache.get(sampleKey)
+        const noTtl = await cache.getLast(sampleKey)
         expect(noTtl).toEqual({x: 1})
 
-        const withTtl = await cache.get(sampleKey, TTL.ONE_HOUR)
+        const withTtl = await cache.getLast(sampleKey, TTL.ONE_HOUR)
         expect(withTtl).toBeNull()
     })
 
+    it('isCached() should check existence without retrieving', async () => {
+        await cache.save(sampleKey, {x: 1})
+        const exists = await cache.isCached(sampleKey)
+        expect(exists).toBe(true)
+
+        await db
+            .updateTable('request_data_cache')
+            .set({
+                created_at: past(TTL.ONE_HOUR * 2) as any
+            })
+            .execute()
+
+        const existsTtl = await cache.isCached(sampleKey, TTL.ONE_HOUR)
+        expect(existsTtl).toBe(false)
+    })
+
     it('expireEntries() should mark matching rows expired', async () => {
-        await cache.save(sampleKey, {a: 1}, {})
-        await cache.save({...sampleKey, reference: 'other'}, {b: 2}, {})
+        await cache.save(sampleKey, {a: 1})
+        await cache.save({...sampleKey, reference: 'other'}, {b: 2})
         const before = await db.selectFrom('request_data_cache').select(['expired']).execute()
         expect(before.every((r: any) => !r.expired)).toBe(true)
 
         const affected = await cache.expireEntries({
-            requestUrl: sampleKey.requestUrl,
+            key: sampleKey.key,
             type: sampleKey.type
         }, TTL.ONE_DAY)
         expect(affected).toBe(2)
@@ -157,8 +173,8 @@ describe('DatabaseRequestDataCache', () => {
     })
 
     it('cleanExpiredEntries() should delete only expired rows', async () => {
-        await cache.save(sampleKey, sampleData, sampleMeta)
-        await cache.save({...sampleKey, reference: 'expired-ref'}, sampleData, sampleMeta)
+        await cache.save({...sampleKey, metadata: sampleMeta}, sampleData)
+        await cache.save({...sampleKey, reference: 'expired-ref', metadata: sampleMeta}, sampleData)
         await db
             .updateTable('request_data_cache')
             .set({expired: dialect === 'postgres' ? true : 1})
@@ -168,7 +184,7 @@ describe('DatabaseRequestDataCache', () => {
         const before = await db.selectFrom('request_data_cache').select(['reference']).execute()
         expect(before.length).toBe(2)
 
-        const del = await cache.cleanExpiredEntries({requestUrl: sampleKey.requestUrl, type: sampleKey.type})
+        const del = await cache.cleanExpiredEntries({key: sampleKey.key, type: sampleKey.type})
         expect(del).toBe(1)
 
         const after = await db.selectFrom('request_data_cache').select(['reference']).execute()
@@ -177,9 +193,9 @@ describe('DatabaseRequestDataCache', () => {
     })
 
     it('main test', async () => {
-        await cache.save({requestUrl: 'url1', type: 'TRANSACT', reference: 'ref1'}, {a: 1}, {})
-        await cache.save({requestUrl: 'url2', type: 'TRANSACT', reference: 'ref2'}, {b: 2}, {})
-        await cache.save({requestUrl: 'url3', type: 'TRANSACT', reference: 'ref3'}, {c: 3}, {})
+        await cache.save({key: 'url1', type: 'TRANSACT', reference: 'ref1'}, {a: 1})
+        await cache.save({key: 'url2', type: 'TRANSACT', reference: 'ref2'}, {b: 2})
+        await cache.save({key: 'url3', type: 'TRANSACT', reference: 'ref3'}, {c: 3})
 
         await db
             .updateTable('request_data_cache')
@@ -189,40 +205,40 @@ describe('DatabaseRequestDataCache', () => {
             .execute()
 
         {
-            const record1 = await cache.get({requestUrl: 'url1'}, TTL.ONE_HOUR * 2 + 1)
+            const record1 = await cache.getLast({key: 'url1'}, TTL.ONE_HOUR * 2 + 1)
             expect(record1).toEqual({a: 1})
-            const record2 = await cache.get({requestUrl: 'url2'}, TTL.ONE_HOUR * 2 + 1)
+            const record2 = await cache.getLast({key: 'url2'}, TTL.ONE_HOUR * 2 + 1)
             expect(record2).toEqual({b: 2})
         }
 
         {
-            const record1 = await cache.get({requestUrl: 'url1'}, TTL.ONE_HOUR)
+            const record1 = await cache.getLast({key: 'url1'}, TTL.ONE_HOUR)
             expect(record1).toBeNull()
         }
 
         {
-            let record1 = await cache.get({requestUrl: 'url1', type: 'type1', reference: 'ref1'}, TTL.ONE_MONTH)
+            let record1 = await cache.getLast({key: 'url1', type: 'type1', reference: 'ref1'}, TTL.ONE_MONTH)
             expect(record1).toBeNull()
-            record1 = await cache.get({requestUrl: 'url1', type: 'TRANSACT', reference: 'ref1'}, TTL.ONE_MONTH)
+            record1 = await cache.getLast({key: 'url1', type: 'TRANSACT', reference: 'ref1'}, TTL.ONE_MONTH)
             expect(record1).toEqual({a: 1})
-            record1 = await cache.get({type: 'TRANSACT'}, TTL.ONE_MONTH)
+            record1 = await cache.getLastOfType('TRANSACT', TTL.ONE_MONTH)
             expect(record1).toEqual({c: 3})
         }
 
         {
             const all = await cache.getAll({type: 'TRANSACT'}, TTL.ONE_MONTH)
             expect(all.length).toBe(3)
-            expect(all[0].data).toStrictEqual({c: 3})
-            expect(all[1].data).toStrictEqual({b: 2})
-            expect(all[2].data).toStrictEqual({a: 1})
+            expect(all[0].content).toStrictEqual({c: 3})
+            expect(all[1].content).toStrictEqual({b: 2})
+            expect(all[2].content).toStrictEqual({a: 1})
         }
     })
 
     it('getAll returns the most recent first', async () => {
-        await cache.save({requestUrl: 'url1', type: 'TRANSACT', reference: 'ref1'}, {a: 1}, {})
-        await cache.save({requestUrl: 'url2', type: 'TRANSACT', reference: 'ref2'}, {b: 2}, {})
-        await cache.save({requestUrl: 'url3', type: 'TRANSACT', reference: 'ref3'}, {c: 3}, {})
-        await cache.save({requestUrl: 'url4', type: 'TRANSACT', reference: 'ref4'}, {d: 4}, {})
+        await cache.save({key: 'url1', type: 'TRANSACT', reference: 'ref1'}, {a: 1})
+        await cache.save({key: 'url2', type: 'TRANSACT', reference: 'ref2'}, {b: 2})
+        await cache.save({key: 'url3', type: 'TRANSACT', reference: 'ref3'}, {c: 3})
+        await cache.save({key: 'url4', type: 'TRANSACT', reference: 'ref4'}, {d: 4})
 
         await db
             .updateTable('request_data_cache')
@@ -258,12 +274,12 @@ describe('DatabaseRequestDataCache', () => {
 
         const all = await cache.getAll({type: 'TRANSACT'}, TTL.UNLIMITED)
         expect(all.length).toBe(4)
-        expect(all[0].data).toStrictEqual({a: 1})
-        expect(all[1].data).toStrictEqual({b: 2})
-        expect(all[2].data).toStrictEqual({d: 4})
-        expect(all[3].data).toStrictEqual({c: 3})
+        expect(all[0].content).toStrictEqual({a: 1})
+        expect(all[1].content).toStrictEqual({b: 2})
+        expect(all[2].content).toStrictEqual({d: 4})
+        expect(all[3].content).toStrictEqual({c: 3})
 
-        const one = await cache.get({type: 'TRANSACT'}, TTL.UNLIMITED)
+        const one = await cache.getLastOfType('TRANSACT', TTL.UNLIMITED)
         expect(one).toStrictEqual({a: 1})
     })
 })
