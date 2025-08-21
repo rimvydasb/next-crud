@@ -11,17 +11,19 @@ Reusable TypeScript repository layer built on [Kysely](https://github.com/kysely
 - [x] `AbstractJSONTable` for storing typed JSON content
 - [x] `AbstractCacheTable` for simple cache management with TTL
 
-## Basic API Usage
+## API Usage
 
-### AbstractJSONTable
+### Repository layer
+
+#### AbstractJSONTable
 
 Store typed JSON content while keeping `id`, `priority`, and `type` columns.
 
 ```ts
 class DashboardTable extends AbstractJSONTable<DatabaseSchema, 'dashboard_configuration', Dashboard> {
-  constructor(db: Kysely<DatabaseSchema>) {
-    super(db, 'dashboard_configuration', ['DASHBOARD'])
-  }
+    constructor(db: Kysely<DatabaseSchema>) {
+        super(db, 'dashboard_configuration', ['DASHBOARD'])
+    }
 }
 
 const repo = new DashboardTable(db)
@@ -30,29 +32,15 @@ const created = await repo.createWithContent({type: 'DASHBOARD', title: 'Main'})
 const fetched = await repo.getByIdWithContent(created.id!)
 ```
 
-### JSONTableDataHandler
-
-Next.js handler that wraps an `AbstractJSONTable` and exposes CRUD endpoints.
-
-```ts
-class DashboardHandler extends JSONTableDataHandler<DatabaseSchema, 'dashboard_configuration', Dashboard> {
-  protected getDb() { return db }
-  protected async getTable() { return new DashboardTable(db) }
-}
-
-export default (req: NextApiRequest, res: NextApiResponse) =>
-  new DashboardHandler(req, res).handle()
-```
-
-### AbstractCacheTable
+#### AbstractCacheTable
 
 Simple cache table with TTL helpers and existence checks.
 
 ```ts
 class RequestCache extends AbstractCacheTable<DatabaseSchema, 'request_data_cache'> {
-  constructor(db: Kysely<DatabaseSchema>) {
-    super(db, 'request_data_cache')
-  }
+    constructor(db: Kysely<DatabaseSchema>) {
+        super(db, 'request_data_cache')
+    }
 }
 
 const cache = new RequestCache(db)
@@ -61,14 +49,60 @@ const exists = await cache.isCached({key: 'session1'}, TTL.ONE_DAY)
 const data = await cache.getLast<{userId: number}>({key: 'session1'}, TTL.ONE_DAY)
 ```
 
+### REST handler layer
+
+#### BaseTableDataHandler
+
+Generic REST handler for tables using `AbstractTable` repositories.
+
+```ts
+class UsersHandler extends BaseTableDataHandler<DatabaseSchema, 'users'> {
+    protected getDb() { return db }
+    protected async getTable() {
+        const repo = new UsersRepository(db)
+        await repo.ensureSchema()
+        return repo
+    }
+}
+
+export default (req: NextApiRequest, res: NextApiResponse) =>
+    new UsersHandler(req, res).handle()
+```
+
+#### JSONTableDataHandler
+
+Same pattern for tables storing JSON content.
+
+```ts
+class DashboardHandler extends JSONTableDataHandler<DatabaseSchema, 'dashboard_configuration', Dashboard> {
+    protected getDb() { return db }
+    protected async getTable() {
+        const repo = new DashboardTable(db)
+        await repo.ensureSchema()
+        return repo
+    }
+}
+
+export default (req: NextApiRequest, res: NextApiResponse) =>
+    new DashboardHandler(req, res).handle()
+```
+
+##### Supported HTTP methods
+
+- **GET** `?id=<id>` → fetch a single row, omit `id` to list all rows. Response: array of rows.
+- **POST** body `{...}` → create a row. Response: array with the created row.
+- **PATCH** body `{id, ...fields}` → update a row. Body `{id, priority}` updates only priority.
+- **DELETE** body `{id}` → soft delete a row. Response: array with the deleted row.
+
+Handlers reply with HTTP status codes from `ErrorCode` and JSON payloads. Repository hooks (`postProcess`, `postGet`) may
+customize responses.
 ## Known Issues
 - priority does not properly work, do not fix it right now, it will be fixed later
 
 ## Development
 Install dependencies:
 ```bash
-npm install -g npm-check-updates
-npm install
+npm ci
 ```
 
 Lint and type-check:
