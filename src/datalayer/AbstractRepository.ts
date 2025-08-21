@@ -9,14 +9,14 @@ export interface TableConfig<TableName extends string> {
     hasPriority?: boolean
 }
 
-export interface AbstractTableSchema {
+export interface AbstractRepositorySchema {
     id: Generated<number>
     priority: PriorityColumn
     deleted_at: NullableTimestampDefault
     created_at: TimestampDefault
 }
 
-export abstract class AbstractTable<DST, TableName extends keyof DST & string> extends BaseTable<DST, TableName> {
+export abstract class AbstractRepository<DST, TableName extends keyof DST & string> extends BaseTable<DST, TableName> {
     protected readonly softDelete: boolean
     protected readonly hasPriority: boolean
 

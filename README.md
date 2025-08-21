@@ -9,15 +9,15 @@ Reusable TypeScript repository layer built on [Kysely](https://github.com/kysely
 - [x] Stable priority updates that shift other rows
 - [x] Schema management via `ensureSchema()` and `syncColumns()`
 - [x] `BaseTable` abstract class for shared table utilities
-- [x] `AbstractJSONTable` for storing typed JSON content
-- [x] `AbstractCacheTable` for simple cache management with TTL
+- [x] `AbstractJSONRepository` for storing typed JSON content
+- [x] `AbstractCacheRepository` for simple cache management with TTL
 - [x] `AbstractKeyValueTable` for simple key/value storage
 
 ## API Usage
 
 ### Repository layer
 
-#### AbstractJSONTable
+#### AbstractJSONRepository
 
 Store typed JSON content while keeping `id`, `priority`, and `type` columns.
 
@@ -26,19 +26,19 @@ Store typed JSON content while keeping `id`, `priority`, and `type` columns.
 | 1 | 0 | 'DASHBOARD' | {"title":"Main"} | null | 2024-01-01T00:00:00Z |
 
 ```ts
-class DashboardTable extends AbstractJSONTable<DatabaseSchema, 'dashboard_configuration', Dashboard> {
+class DashboardRepository extends AbstractJSONRepository<DatabaseSchema, 'dashboard_configuration', Dashboard> {
     constructor(db: Kysely<DatabaseSchema>) {
         super(db, 'dashboard_configuration', ['DASHBOARD'])
     }
 }
 
-const repo = new DashboardTable(db)
+const repo = new DashboardRepository(db)
 await repo.ensureSchema()
 const created = await repo.createWithContent({type: 'DASHBOARD', title: 'Main'}) // => { id: 1, priority: 0, type: 'DASHBOARD', title: 'Main' }
 const fetched = await repo.getByIdWithContent(created.id!) // => { id: 1, priority: 0, type: 'DASHBOARD', title: 'Main' }
 ```
 
-#### AbstractCacheTable
+#### AbstractCacheRepository
 
 Simple cache table with TTL helpers and existence checks.
 
@@ -47,13 +47,13 @@ Simple cache table with TTL helpers and existence checks.
 | 1 | 'session1' | 'SESSION' | {"userId":1} | null | 2024-01-01T00:00:00Z |
 
 ```ts
-class RequestCache extends AbstractCacheTable<DatabaseSchema, 'request_data_cache'> {
+class RequestCacheRepository extends AbstractCacheRepository<DatabaseSchema, 'request_data_cache'> {
     constructor(db: Kysely<DatabaseSchema>) {
         super(db, 'request_data_cache')
     }
 }
 
-const cache = new RequestCache(db)
+const cache = new RequestCacheRepository(db)
 await cache.save({key: 'session1', type: 'SESSION'}, {userId: 1})
 const exists = await cache.isCached({key: 'session1'}, TTL.ONE_DAY) // => true
 const data = await cache.getLast<{userId: number}>({key: 'session1'}, TTL.ONE_DAY) // => { userId: 1 }
@@ -83,7 +83,7 @@ const obj = await settings.getObject() // => { THEME: 'dark' }
 
 #### BaseTableDataHandler
 
-Generic REST handler for tables using `AbstractTable` repositories.
+Generic REST handler for repositories implementing `AbstractRepository`.
 
 ```ts
 class UsersHandler extends BaseTableDataHandler<DatabaseSchema, 'users'> {
@@ -107,7 +107,7 @@ Same pattern for tables storing JSON content.
 class DashboardHandler extends JSONTableDataHandler<DatabaseSchema, 'dashboard_configuration', Dashboard> {
     protected getDb() { return db }
     protected async getTable() {
-        const repo = new DashboardTable(db)
+        const repo = new DashboardRepository(db)
         await repo.ensureSchema()
         return repo
     }

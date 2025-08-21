@@ -6,7 +6,7 @@ import {
     DatabaseSchema
 } from "@datalayer/_tests_/testUtils";
 
-describe('AbstractJSONTable', () => {
+describe('AbstractJSONRepository', () => {
     let db: Kysely<DatabaseSchema>
     let repository: DashboardConfigurationRepository
 

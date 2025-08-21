@@ -1,11 +1,11 @@
 import {Insertable, Kysely, Selectable, Updateable} from 'kysely'
 import {BaseHandler, ErrorCode, ResponseError} from './BaseHandler'
-import {AbstractTable} from "@datalayer/AbstractTable";
+import {AbstractRepository} from "@datalayer/AbstractRepository";
 import {ensureValidId} from "@datalayer/utilities";
 
 /**
  * Generic REST handler that wires HTTP verbs to repository operations
- * implemented by {@link AbstractTable}. Subclasses only need to provide
+ * implemented by {@link AbstractRepository}. Subclasses only need to provide
  * a repository instance via {@link getTable}.
  */
 export abstract class BaseTableDataHandler<DST, TableName extends keyof DST & string> extends BaseHandler<Array<Selectable<DST[TableName]>>> {
@@ -15,7 +15,7 @@ export abstract class BaseTableDataHandler<DST, TableName extends keyof DST & st
      * The repository is typically created using the Kysely instance from
      * {@link BaseHandler.db} and should have its schema ensured prior to use.
      */
-    protected abstract getTable(): Promise<AbstractTable<DST, TableName>>
+    protected abstract getTable(): Promise<AbstractRepository<DST, TableName>>
 
     /**
      * Subclasses must return the Kysely instance used for database operations.
