@@ -21,6 +21,10 @@ Reusable TypeScript repository layer built on [Kysely](https://github.com/kysely
 
 Store typed JSON content while keeping `id`, `priority`, and `type` columns.
 
+| id | priority | type | content | deleted_at | created_at |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 0 | 'DASHBOARD' | {"title":"Main"} | null | 2024-01-01T00:00:00Z |
+
 ```ts
 class DashboardTable extends AbstractJSONTable<DatabaseSchema, 'dashboard_configuration', Dashboard> {
     constructor(db: Kysely<DatabaseSchema>) {
@@ -30,13 +34,17 @@ class DashboardTable extends AbstractJSONTable<DatabaseSchema, 'dashboard_config
 
 const repo = new DashboardTable(db)
 await repo.ensureSchema()
-const created = await repo.createWithContent({type: 'DASHBOARD', title: 'Main'})
-const fetched = await repo.getByIdWithContent(created.id!)
+const created = await repo.createWithContent({type: 'DASHBOARD', title: 'Main'}) // => { id: 1, priority: 0, type: 'DASHBOARD', title: 'Main' }
+const fetched = await repo.getByIdWithContent(created.id!) // => { id: 1, priority: 0, type: 'DASHBOARD', title: 'Main' }
 ```
 
 #### AbstractCacheTable
 
 Simple cache table with TTL helpers and existence checks.
+
+| id | key | type | content | expired | created_at |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 'session1' | 'SESSION' | {"userId":1} | null | 2024-01-01T00:00:00Z |
 
 ```ts
 class RequestCache extends AbstractCacheTable<DatabaseSchema, 'request_data_cache'> {
@@ -47,13 +55,17 @@ class RequestCache extends AbstractCacheTable<DatabaseSchema, 'request_data_cach
 
 const cache = new RequestCache(db)
 await cache.save({key: 'session1', type: 'SESSION'}, {userId: 1})
-const exists = await cache.isCached({key: 'session1'}, TTL.ONE_DAY)
-const data = await cache.getLast<{userId: number}>({key: 'session1'}, TTL.ONE_DAY)
+const exists = await cache.isCached({key: 'session1'}, TTL.ONE_DAY) // => true
+const data = await cache.getLast<{userId: number}>({key: 'session1'}, TTL.ONE_DAY) // => { userId: 1 }
 ```
 
 #### AbstractKeyValueTable
 
 Persist simple key/value pairs with typed values.
+
+| key | value |
+| --- | --- |
+| 'THEME' | 'dark' |
 
 ```ts
 class SettingsTable extends AbstractKeyValueTable<DatabaseSchema, 'settings', string> {
@@ -64,7 +76,7 @@ class SettingsTable extends AbstractKeyValueTable<DatabaseSchema, 'settings', st
 
 const settings = new SettingsTable(db)
 await settings.setValue('THEME', 'dark')
-const obj = await settings.getObject()
+const obj = await settings.getObject() // => { THEME: 'dark' }
 ```
 
 ### REST handler layer
