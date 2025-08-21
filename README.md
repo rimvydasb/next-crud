@@ -8,8 +8,10 @@ Reusable TypeScript repository layer built on [Kysely](https://github.com/kysely
 - [x] Soft delete, hard delete, and restore
 - [x] Stable priority updates that shift other rows
 - [x] Schema management via `ensureSchema()` and `syncColumns()`
+- [x] `BaseTable` abstract class for shared table utilities
 - [x] `AbstractJSONTable` for storing typed JSON content
 - [x] `AbstractCacheTable` for simple cache management with TTL
+- [x] `AbstractKeyValueTable` for simple key/value storage
 
 ## API Usage
 
@@ -47,6 +49,22 @@ const cache = new RequestCache(db)
 await cache.save({key: 'session1', type: 'SESSION'}, {userId: 1})
 const exists = await cache.isCached({key: 'session1'}, TTL.ONE_DAY)
 const data = await cache.getLast<{userId: number}>({key: 'session1'}, TTL.ONE_DAY)
+```
+
+#### AbstractKeyValueTable
+
+Persist simple key/value pairs with typed values.
+
+```ts
+class SettingsTable extends AbstractKeyValueTable<DatabaseSchema, 'settings', string> {
+    constructor(db: Kysely<DatabaseSchema>) {
+        super(db, {tableName: 'settings', valueType: ColumnType.STRING})
+    }
+}
+
+const settings = new SettingsTable(db)
+await settings.setValue('THEME', 'dark')
+const obj = await settings.getObject()
 ```
 
 ### REST handler layer

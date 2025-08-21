@@ -1,7 +1,7 @@
-import {Generated, Insertable, Kysely, sql, Updateable} from 'kysely'
-import {ColumnSpec, ColumnType, SupportedDialect, TimestampDefault} from './entities'
-import {addIdColumn, createdAtDefaultSql, detectDialect} from './utilities'
-import {createSqlApi, ISQLApi} from './sqlapi/ISQLApi'
+import {Generated, Insertable, sql, Updateable} from 'kysely'
+import {ColumnType, TimestampDefault} from './entities'
+import {addIdColumn, createdAtDefaultSql} from './utilities'
+import {BaseTable} from './BaseTable'
 
 export enum TTL {
     ONE_HOUR = 3600,
@@ -24,30 +24,12 @@ export interface CacheEntry<T> {
     [extra: string]: any
 }
 
-export abstract class AbstractCacheTable<DST, TableName extends keyof DST & string> {
-    protected readonly dialect: SupportedDialect
-    protected readonly sqlApi: ISQLApi
-    protected readonly tableName: TableName
-
-    constructor(protected readonly database: Kysely<DST>, tableName: TableName) {
-        this.tableName = tableName
-        this.dialect = detectDialect(this.database)
-        this.sqlApi = createSqlApi(this.dialect)
-    }
-
-    protected get db(): Kysely<any> {
-        return this.database as unknown as Kysely<any>
-    }
-
-    protected extraColumns(): ColumnSpec[] {
-        return []
-    }
+export abstract class AbstractCacheTable<DST, TableName extends keyof DST & string> extends BaseTable<DST, TableName> {
 
     async ensureSchema(): Promise<void> {
         let createBuilder = this.db.schema.createTable(this.tableName).ifNotExists()
         createBuilder = addIdColumn(this.dialect, createBuilder)
-        createBuilder = createBuilder
-            .addColumn('key', 'varchar', (col) => col.notNull())
+        createBuilder = createBuilder.addColumn('key', 'varchar', (col) => col.notNull())
         createBuilder = createBuilder.addColumn(
             'content',
             this.sqlApi.toStringType(ColumnType.JSON) as any,
@@ -64,24 +46,9 @@ export abstract class AbstractCacheTable<DST, TableName extends keyof DST & stri
             (col) => col.notNull().defaultTo(sql.raw(createdAtDefaultSql())),
         )
 
-        for (const column of this.extraColumns()) {
-            createBuilder = createBuilder.addColumn(
-                column.name,
-                this.sqlApi.toStringType(column.type) as any,
-                (col) => {
-                    if (column.notNull) col = col.notNull()
-                    if (column.unique) col = col.unique()
-                    if (column.defaultSql) col = col.defaultTo(sql.raw(column.defaultSql))
-                    return col
-                },
-            )
-        }
+        createBuilder = this.applyExtraColumns(createBuilder)
 
         await createBuilder.execute()
-    }
-
-    async syncColumns(schemaName: string = 'public'): Promise<void> {
-        await this.sqlApi.syncColumns(this.db, this.tableName as string, this.extraColumns(), schemaName)
     }
 
     async expireEntries(select: Record<string, any>, ttl: TTL): Promise<number> {
@@ -167,7 +134,6 @@ export abstract class AbstractCacheTable<DST, TableName extends keyof DST & stri
     }
 
     // check if entry exists with a given select without retrieving
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async isCached<T>(select: Partial<CacheEntry<T>>, ttl?: TTL): Promise<boolean> {
         this.ensureSelectNotEmpty(select)
 

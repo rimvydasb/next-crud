@@ -1,7 +1,7 @@
 import {Generated, Insertable, Kysely, Selectable, sql, Updateable} from 'kysely'
-import {ColumnSpec, NullableTimestampDefault, PriorityColumn, SupportedDialect, TimestampDefault} from './entities'
-import {createSqlApi, ISQLApi} from './sqlapi/ISQLApi'
-import {addIdColumn, createdAtDefaultSql, createPriorityIndex, detectDialect, ensureValidId,} from './utilities'
+import {ColumnSpec, NullableTimestampDefault, PriorityColumn, TimestampDefault} from './entities'
+import {BaseTable} from './BaseTable'
+import {addIdColumn, createdAtDefaultSql, createPriorityIndex, ensureValidId} from './utilities'
 
 export interface TableConfig<TableName extends string> {
     tableName: TableName
@@ -9,22 +9,19 @@ export interface TableConfig<TableName extends string> {
     hasPriority?: boolean
 }
 
-export interface BaseTable {
+export interface AbstractTableSchema {
     id: Generated<number>
     priority: PriorityColumn
     deleted_at: NullableTimestampDefault
     created_at: TimestampDefault
 }
 
-export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
-    protected readonly dialect: SupportedDialect
-    protected readonly sqlApi: ISQLApi
-    protected readonly tableName: TableName
+export abstract class AbstractTable<DST, TableName extends keyof DST & string> extends BaseTable<DST, TableName> {
     protected readonly softDelete: boolean
     protected readonly hasPriority: boolean
 
     constructor(
-        protected readonly database: Kysely<DST>,
+        database: Kysely<DST>,
         tableNameOrConfig: TableName | TableConfig<TableName>,
     ) {
         const cfg: TableConfig<TableName> =
@@ -32,21 +29,16 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
                 ? {tableName: tableNameOrConfig}
                 : tableNameOrConfig
 
-        this.tableName = cfg.tableName
+        super(database, cfg.tableName)
+
         this.softDelete = cfg.softDelete ?? false
         this.hasPriority = cfg.hasPriority ?? false
-
-        this.dialect = detectDialect(this.database)
-        this.sqlApi = createSqlApi(this.dialect)
-    }
-
-    // Access Kysely with relaxed typing for generic operations
-    protected get db(): Kysely<any> {
-        return this.database as unknown as Kysely<any>
     }
 
     // Define table-specific extra columns in subclasses, in one place
-    protected abstract extraColumns(): ColumnSpec[]
+    protected override extraColumns(): ColumnSpec[] {
+        return []
+    }
 
     // Create table if missing: base + extra columns
     async ensureSchema(): Promise<void> {
@@ -69,28 +61,12 @@ export abstract class AbstractTable<DST, TableName extends keyof DST & string> {
             (col) => col.notNull().defaultTo(sql.raw(createdAtDefaultSql())),
         )
 
-        for (const column of this.extraColumns()) {
-            createBuilder = createBuilder.addColumn(
-                column.name,
-                this.sqlApi.toStringType(column.type) as any,
-                (col) => {
-                    if (column.notNull) col = col.notNull()
-                    if (column.unique) col = col.unique()
-                    if (column.defaultSql) col = col.defaultTo(sql.raw(column.defaultSql))
-                    return col
-                }
-            )
-        }
+        createBuilder = this.applyExtraColumns(createBuilder)
 
         await createBuilder.execute()
         if (this.hasPriority) {
             await createPriorityIndex(this.db, this.tableName)
         }
-    }
-
-    // Add any newly declared extra columns to an existing table (forward-only)
-    async syncColumns(schemaName: string = 'public'): Promise<void> {
-        await this.sqlApi.syncColumns(this.db, this.tableName as string, this.extraColumns(), schemaName)
     }
 
     async create(values: Insertable<DST[TableName]>): Promise<Selectable<DST[TableName]>> {
