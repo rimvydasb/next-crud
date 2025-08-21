@@ -5,7 +5,7 @@ import {Kysely, PostgresDialect, sql, SqliteDialect} from "kysely";
 import {AbstractRepository, AbstractRepositorySchema} from "@datalayer/AbstractRepository";
 import {IJSONContent} from "@datalayer/IJSONContent";
 import {AbstractJSONRepository, JSONContentBaseTable} from "@datalayer/AbstractJSONRepository";
-import {AbstractKeyValueTable, KeyValueBaseTable} from "@datalayer/AbstractKeyValueTable";
+import {AbstractKeyValueRepository, KeyValueBaseTable} from "@datalayer/AbstractKeyValueRepository";
 import BetterSqlite3 from "better-sqlite3";
 import {Pool} from "pg";
 
@@ -75,7 +75,7 @@ export class DashboardConfigurationRepository extends AbstractJSONRepository<Dat
     }
 }
 
-export class SettingsRepository extends AbstractKeyValueTable<DatabaseSchema, 'settings', string> {
+export class SettingsRepository extends AbstractKeyValueRepository<DatabaseSchema, 'settings', string> {
     constructor(database: Kysely<DatabaseSchema>) {
         super(database, {tableName: 'settings', valueType: ColumnType.STRING})
     }

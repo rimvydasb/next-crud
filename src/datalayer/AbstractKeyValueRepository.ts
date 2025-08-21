@@ -12,7 +12,7 @@ export interface KeyValueTableConfig<TableName extends string> {
     valueType: ColumnType
 }
 
-export abstract class AbstractKeyValueTable<
+export abstract class AbstractKeyValueRepository<
     DST,
     TableName extends keyof DST & string,
     Value
