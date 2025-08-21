@@ -1,5 +1,5 @@
 import {Insertable, Kysely, Selectable, Updateable} from 'kysely'
-import {AbstractTable, BaseTable, TableConfig} from './AbstractTable'
+import {AbstractTable, AbstractTableSchema, TableConfig} from './AbstractTable'
 import {ColumnSpec, ColumnType} from './entities'
 import {IJSONContent} from './IJSONContent'
 
@@ -118,7 +118,7 @@ export abstract class AbstractJSONTable<DST, TableName extends keyof DST & strin
     }
 }
 
-export interface JSONContentBaseTable<T> extends BaseTable {
+export interface JSONContentBaseTable<T> extends AbstractTableSchema {
     type: string
     content: T
 }

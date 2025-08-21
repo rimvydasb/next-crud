@@ -2,9 +2,10 @@ import type {NextApiRequest, NextApiResponse} from 'next'
 import {AbstractCacheTable, CacheBaseTable} from "@datalayer/AbstractCacheTable";
 import {ColumnSpec, ColumnType} from "@datalayer/entities";
 import {Kysely, PostgresDialect, sql, SqliteDialect} from "kysely";
-import {AbstractTable, BaseTable} from "@datalayer/AbstractTable";
+import {AbstractTable, AbstractTableSchema} from "@datalayer/AbstractTable";
 import {IJSONContent} from "@datalayer/IJSONContent";
 import {AbstractJSONTable, JSONContentBaseTable} from "@datalayer/AbstractJSONTable";
+import {AbstractKeyValueTable, KeyValueBaseTable} from "@datalayer/AbstractKeyValueTable";
 import BetterSqlite3 from "better-sqlite3";
 import {Pool} from "pg";
 
@@ -74,12 +75,18 @@ export class DashboardConfigurationRepository extends AbstractJSONTable<Database
     }
 }
 
+export class SettingsRepository extends AbstractKeyValueTable<DatabaseSchema, 'settings', string> {
+    constructor(database: Kysely<DatabaseSchema>) {
+        super(database, {tableName: 'settings', valueType: ColumnType.STRING})
+    }
+}
+
 export interface RequestDataCacheTable extends CacheBaseTable {
     reference: string | null
     metadata: unknown | null
 }
 
-export interface UsersTable extends BaseTable {
+export interface UsersTable extends AbstractTableSchema {
     name: string
     surname: string
     telephone_number: string
@@ -89,6 +96,7 @@ export interface DatabaseSchema {
     users: UsersTable
     request_data_cache: RequestDataCacheTable
     dashboard_configuration: JSONContentBaseTable<DashboardConfiguration>
+    settings: KeyValueBaseTable<string>
 }
 
 /**
