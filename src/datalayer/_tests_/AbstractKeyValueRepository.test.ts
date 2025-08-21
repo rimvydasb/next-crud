@@ -1,7 +1,7 @@
 import {Kysely} from 'kysely'
 import {createTestDb, DatabaseSchema, SettingsRepository} from '@datalayer/_tests_/testUtils'
 
-describe('AbstractKeyValueTable', () => {
+describe('AbstractKeyValueRepository', () => {
     let db: Kysely<DatabaseSchema>
     let repo: SettingsRepository
 

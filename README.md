@@ -11,7 +11,7 @@ Reusable TypeScript repository layer built on [Kysely](https://github.com/kysely
 - [x] `BaseTable` abstract class for shared table utilities
 - [x] `AbstractJSONRepository` for storing typed JSON content
 - [x] `AbstractCacheRepository` for simple cache management with TTL
-- [x] `AbstractKeyValueTable` for simple key/value storage
+- [x] `AbstractKeyValueRepository` for simple key/value storage
 
 ## API Usage
 
@@ -59,7 +59,7 @@ const exists = await cache.isCached({key: 'session1'}, TTL.ONE_DAY) // => true
 const data = await cache.getLast<{userId: number}>({key: 'session1'}, TTL.ONE_DAY) // => { userId: 1 }
 ```
 
-#### AbstractKeyValueTable
+#### AbstractKeyValueRepository
 
 Persist simple key/value pairs with typed values.
 
@@ -68,13 +68,13 @@ Persist simple key/value pairs with typed values.
 | 'THEME' | 'dark' |
 
 ```ts
-class SettingsTable extends AbstractKeyValueTable<DatabaseSchema, 'settings', string> {
+class SettingsRepository extends AbstractKeyValueRepository<DatabaseSchema, 'settings', string> {
     constructor(db: Kysely<DatabaseSchema>) {
         super(db, {tableName: 'settings', valueType: ColumnType.STRING})
     }
 }
 
-const settings = new SettingsTable(db)
+const settings = new SettingsRepository(db)
 await settings.setValue('THEME', 'dark')
 const obj = await settings.getObject() // => { THEME: 'dark' }
 ```
