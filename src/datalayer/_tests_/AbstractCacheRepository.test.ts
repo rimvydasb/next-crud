@@ -1,6 +1,6 @@
 import {Kysely, sql} from 'kysely';
 import RequestDataRepository, {createTestDb, DatabaseSchema} from "@datalayer/_tests_/testUtils";
-import {CacheEntry, TTL} from "@datalayer/AbstractCacheTable";
+import {CacheEntry, TTL} from "@datalayer/AbstractCacheRepository";
 
 describe('DatabaseRequestDataCache', () => {
     let db: Kysely<DatabaseSchema>

@@ -1,6 +1,6 @@
 import {Kysely} from 'kysely'
 import {ColumnSpec, ColumnType} from '../entities'
-import {AbstractTable} from '../AbstractTable'
+import {AbstractRepository} from '../AbstractRepository'
 import {createTestDb, DatabaseSchema, UsersRepository} from "@datalayer/_tests_/testUtils";
 
 describe('UsersRepository CRUD', () => {
@@ -62,8 +62,8 @@ describe('UsersRepository CRUD', () => {
     })
 })
 
-describe('AbstractTable feature toggles', () => {
-    class UsersRepositoryNoFeatures extends AbstractTable<DatabaseSchema, 'users'> {
+describe('AbstractRepository feature toggles', () => {
+    class UsersRepositoryNoFeatures extends AbstractRepository<DatabaseSchema, 'users'> {
         constructor(db: Kysely<DatabaseSchema>) {
             super(db, 'users')
         }

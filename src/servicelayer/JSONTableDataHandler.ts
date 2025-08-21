@@ -1,11 +1,11 @@
 import {Kysely} from 'kysely'
 import {BaseHandler, ErrorCode, ResponseError} from './BaseHandler'
-import {AbstractJSONTable} from '@datalayer/AbstractJSONTable'
+import {AbstractJSONRepository} from '@datalayer/AbstractJSONRepository'
 import {IJSONContent} from '@datalayer/IJSONContent'
 import {ensureValidId} from '@datalayer/utilities'
 
 /**
- * REST handler for tables based on {@link AbstractJSONTable}. Works similarly
+ * REST handler for tables based on {@link AbstractJSONRepository}. Works similarly
  * to {@link BaseTableDataHandler} but operates on JSON content objects.
  */
 export abstract class JSONTableDataHandler<
@@ -16,7 +16,7 @@ export abstract class JSONTableDataHandler<
     /**
      * Subclasses must return a repository instance for the table they manage.
      */
-    protected abstract getTable(): Promise<AbstractJSONTable<DST, TableName, Content>>
+    protected abstract getTable(): Promise<AbstractJSONRepository<DST, TableName, Content>>
 
     /**
      * Subclasses must return the Kysely instance used for database operations.

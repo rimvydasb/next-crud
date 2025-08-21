@@ -1,10 +1,10 @@
 import type {NextApiRequest, NextApiResponse} from 'next'
-import {AbstractCacheTable, CacheBaseTable} from "@datalayer/AbstractCacheTable";
+import {AbstractCacheRepository, CacheBaseTable} from "@datalayer/AbstractCacheRepository";
 import {ColumnSpec, ColumnType} from "@datalayer/entities";
 import {Kysely, PostgresDialect, sql, SqliteDialect} from "kysely";
-import {AbstractTable, AbstractTableSchema} from "@datalayer/AbstractTable";
+import {AbstractRepository, AbstractRepositorySchema} from "@datalayer/AbstractRepository";
 import {IJSONContent} from "@datalayer/IJSONContent";
-import {AbstractJSONTable, JSONContentBaseTable} from "@datalayer/AbstractJSONTable";
+import {AbstractJSONRepository, JSONContentBaseTable} from "@datalayer/AbstractJSONRepository";
 import {AbstractKeyValueTable, KeyValueBaseTable} from "@datalayer/AbstractKeyValueTable";
 import BetterSqlite3 from "better-sqlite3";
 import {Pool} from "pg";
@@ -33,7 +33,7 @@ export function createMock(method: string, body: any = {}, query: any = {}) {
     return {req, res: res as NextApiResponse}
 }
 
-export default class RequestDataRepository extends AbstractCacheTable<DatabaseSchema, 'request_data_cache'> {
+export default class RequestDataRepository extends AbstractCacheRepository<DatabaseSchema, 'request_data_cache'> {
     constructor(db: Kysely<DatabaseSchema>) {
         super(db, 'request_data_cache')
     }
@@ -46,7 +46,7 @@ export default class RequestDataRepository extends AbstractCacheTable<DatabaseSc
     }
 }
 
-export class UsersRepository extends AbstractTable<DatabaseSchema, 'users'> {
+export class UsersRepository extends AbstractRepository<DatabaseSchema, 'users'> {
 
     constructor(database: Kysely<DatabaseSchema>) {
         super(database, {tableName: 'users', softDelete: true, hasPriority: true})
@@ -69,7 +69,7 @@ export interface DashboardConfiguration extends IJSONContent {
     type: 'DASHBOARD'
 }
 
-export class DashboardConfigurationRepository extends AbstractJSONTable<DatabaseSchema, 'dashboard_configuration', DashboardConfiguration> {
+export class DashboardConfigurationRepository extends AbstractJSONRepository<DatabaseSchema, 'dashboard_configuration', DashboardConfiguration> {
     constructor(database: Kysely<DatabaseSchema>) {
         super(database, {tableName: 'dashboard_configuration', softDelete: true, hasPriority: true}, ['DASHBOARD'])
     }
@@ -86,7 +86,7 @@ export interface RequestDataCacheTable extends CacheBaseTable {
     metadata: unknown | null
 }
 
-export interface UsersTable extends AbstractTableSchema {
+export interface UsersTable extends AbstractRepositorySchema {
     name: string
     surname: string
     telephone_number: string
@@ -141,7 +141,7 @@ export async function createTestDb(): Promise<Kysely<DatabaseSchema>> {
     })
 }
 
-class TestTable extends AbstractTable<DatabaseSchema, 'users'> {
+class TestTable extends AbstractRepository<DatabaseSchema, 'users'> {
     protected extraColumns(): ColumnSpec[] {
         return []
     }
@@ -151,7 +151,7 @@ class TestTable extends AbstractTable<DatabaseSchema, 'users'> {
     }
 }
 
-class TestCacheTable extends AbstractCacheTable<DatabaseSchema, 'request_data_cache'> {
+class TestCacheTable extends AbstractCacheRepository<DatabaseSchema, 'request_data_cache'> {
     public getDialect(): string {
         return this.dialect
     }

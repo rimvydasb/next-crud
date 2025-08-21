@@ -24,7 +24,7 @@ export interface CacheEntry<T> {
     [extra: string]: any
 }
 
-export abstract class AbstractCacheTable<DST, TableName extends keyof DST & string> extends BaseTable<DST, TableName> {
+export abstract class AbstractCacheRepository<DST, TableName extends keyof DST & string> extends BaseTable<DST, TableName> {
 
     async ensureSchema(): Promise<void> {
         let createBuilder = this.db.schema.createTable(this.tableName).ifNotExists()

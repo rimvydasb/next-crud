@@ -1,14 +1,14 @@
 import {Insertable, Kysely, Selectable, Updateable} from 'kysely'
-import {AbstractTable, AbstractTableSchema, TableConfig} from './AbstractTable'
+import {AbstractRepository, AbstractRepositorySchema, TableConfig} from './AbstractRepository'
 import {ColumnSpec, ColumnType} from './entities'
 import {IJSONContent} from './IJSONContent'
 
 /**
- * Simple JSON storage table backed by a {@link AbstractTable}. Stores arbitrary
+ * Simple JSON storage table backed by a {@link AbstractRepository}. Stores arbitrary
  * JSON in a `content` column while exposing `id`, `type` and `priority` fields
  * directly on the returned objects.
  */
-export abstract class AbstractJSONTable<DST, TableName extends keyof DST & string, Content extends IJSONContent> extends AbstractTable<DST, TableName> {
+export abstract class AbstractJSONRepository<DST, TableName extends keyof DST & string, Content extends IJSONContent> extends AbstractRepository<DST, TableName> {
     private readonly supportedTypes: string[]
 
     constructor(
@@ -118,7 +118,7 @@ export abstract class AbstractJSONTable<DST, TableName extends keyof DST & strin
     }
 }
 
-export interface JSONContentBaseTable<T> extends AbstractTableSchema {
+export interface JSONContentBaseTable<T> extends AbstractRepositorySchema {
     type: string
     content: T
 }
