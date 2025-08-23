@@ -7,6 +7,7 @@ module.exports = {
     ],
     moduleNameMapper: {
         '^@datalayer(.*)$': '<rootDir>/src/datalayer$1',
-        '^@servicelayer(.*)$': '<rootDir>/src/servicelayer$1'
+        '^@servicelayer(.*)$': '<rootDir>/src/servicelayer$1',
+        '^@integrationlayer(.*)$': '<rootDir>/src/integrationlayer$1'
     }
 }
