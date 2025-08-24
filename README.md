@@ -79,9 +79,9 @@ class SettingsRepository extends AbstractKeyValueRepository<DatabaseSchema, 'set
     }
 }
 
-const settings = new SettingsRepository(db)
-await settings.setValue('THEME', 'dark')
-const obj = await settings.getObject() // => { THEME: 'dark' }
+    const settings = new SettingsRepository(db)
+    await settings.setValue('THEME', 'dark')
+    const obj = await settings.exportData() // => { THEME: 'dark' }
 ```
 
 ### REST handler layer

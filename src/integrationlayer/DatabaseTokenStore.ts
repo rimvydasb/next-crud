@@ -7,12 +7,12 @@ import ITokenProvider, {TokenData} from './ITokenProvider';
  * using the supplied {@link ITokenProvider}.
  */
 export default class DatabaseTokenStore implements ITokenStore {
-    private readonly repository: AbstractKeyValueRepository<any, any, TokenData>;
+    private readonly repository: AbstractKeyValueRepository<any, any>;
     private readonly key: string;
     private readonly provider: ITokenProvider;
 
     constructor(
-        repository: AbstractKeyValueRepository<any, any, TokenData>,
+        repository: AbstractKeyValueRepository<any, any>,
         key: string,
         provider: ITokenProvider,
     ) {
@@ -23,7 +23,7 @@ export default class DatabaseTokenStore implements ITokenStore {
 
     /** Retrieve a valid token from storage, refreshing when necessary. */
     async getToken(): Promise<string> {
-        const existing = await this.repository.getValue(this.key);
+        const existing = (await this.repository.getValue(this.key)) as TokenData | null | undefined;
         if (existing && (!existing.expiryDate || existing.expiryDate > Date.now())) {
             return existing.token;
         }
@@ -32,7 +32,7 @@ export default class DatabaseTokenStore implements ITokenStore {
 
     /** Force a refresh of the token regardless of its expiry. */
     async refreshToken(): Promise<string> {
-        const existing = await this.repository.getValue(this.key);
+        const existing = (await this.repository.getValue(this.key)) as TokenData | null | undefined;
         return this.refreshTokenInternal(existing ?? undefined);
     }
 
