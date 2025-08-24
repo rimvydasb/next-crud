@@ -19,6 +19,7 @@ export default class AuthorisedCachedTransporter extends AuthorisedTransporter {
 
     /**
      * Execute a GET request and cache the response using the configured cache.
+     * If response is already
      */
     public async getWithCache<T>(
         urlPart: string,
@@ -32,6 +33,20 @@ export default class AuthorisedCachedTransporter extends AuthorisedTransporter {
         const result = await this.get<T>(urlPart);
         await this.requestCache.save(cacheKey, result);
         return result;
+    }
+
+    /**
+     * Retrieve a cached entry without making a network request.
+     * Returns null when not found or expired.
+     */
+    public async getFromCache<T>(
+        urlPart: string,
+        type: string,
+        ttl: TTL = TTL.UNLIMITED,
+        cacheKeyParts?: Partial<CacheEntry<any>>,
+    ) {
+        const cacheKey = {key: urlPart, type, ...cacheKeyParts};
+        return this.requestCache.getLast<T>(cacheKey, ttl);
     }
 }
 
