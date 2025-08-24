@@ -1,13 +1,5 @@
 import fetch from 'cross-fetch';
 import ITokenStore from './ITokenStore';
-import IRequestCache from './IRequestCache';
-
-/** Options for {@link AuthorisedTransporter}. */
-export interface TransporterOptions {
-    baseUrl: string;
-    tokenStore?: ITokenStore;
-    requestCache?: IRequestCache;
-}
 
 /**
  * Wrapper around `fetch` that injects a bearer token for each request.
@@ -15,15 +7,13 @@ export interface TransporterOptions {
 export default class AuthorisedTransporter {
     private readonly baseUrl: string;
     private readonly tokenStore?: ITokenStore;
-    protected readonly requestCache?: IRequestCache;
 
-    constructor({baseUrl, tokenStore, requestCache}: TransporterOptions) {
+    constructor(baseUrl: string, tokenStore?: ITokenStore) {
         if (!/^https?:\/\//.test(baseUrl)) {
             throw new Error('baseUrl must start with http:// or https://');
         }
         this.baseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
         this.tokenStore = tokenStore;
-        this.requestCache = requestCache;
     }
 
     /**

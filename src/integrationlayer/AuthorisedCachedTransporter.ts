@@ -1,6 +1,7 @@
 import {CacheEntry, TTL} from '@datalayer/AbstractCacheRepository';
 import IRequestCache from './IRequestCache';
-import AuthorisedTransporter, {TransporterOptions} from './AuthorisedTransporter';
+import AuthorisedTransporter from './AuthorisedTransporter';
+import ITokenStore from "@integrationlayer/ITokenStore";
 
 /**
  * Transporter that adds caching capabilities to {@link AuthorisedTransporter}.
@@ -11,12 +12,9 @@ import AuthorisedTransporter, {TransporterOptions} from './AuthorisedTransporter
 export default class AuthorisedCachedTransporter extends AuthorisedTransporter {
     protected readonly requestCache: IRequestCache;
 
-    constructor(options: TransporterOptions & {requestCache: IRequestCache}) {
-        super(options);
-        if (!options.requestCache) {
-            throw new Error('requestCache is required for AuthorisedCachedTransporter');
-        }
-        this.requestCache = options.requestCache;
+    constructor(baseUrl: string, requestCache: IRequestCache, tokenStore?: ITokenStore) {
+        super(baseUrl, tokenStore);
+        this.requestCache = requestCache;
     }
 
     /**
