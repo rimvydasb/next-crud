@@ -6,7 +6,7 @@ import {PostgresSQLApi} from './PostgresSQLApi'
 export interface ISQLApi {
     dialect: SupportedDialect
 
-    toStringType(type: ColumnType): string
+    toSQLType(type: ColumnType): string
 
     syncColumns(
         db: Kysely<any>,

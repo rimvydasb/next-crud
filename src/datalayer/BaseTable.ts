@@ -26,7 +26,7 @@ export abstract class BaseTable<DST, TableName extends keyof DST & string> {
         for (const column of this.extraColumns()) {
             builder = (builder as any).addColumn(
                 column.name,
-                this.sqlApi.toStringType(column.type) as any,
+                this.sqlApi.toSQLType(column.type) as any,
                 (col: any) => {
                     if (column.notNull) col = col.notNull()
                     if (column.unique) col = col.unique()

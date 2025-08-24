@@ -4,7 +4,7 @@ import {ISQLApi} from "./ISQLApi";
 
 export class PostgresSQLApi implements ISQLApi {
     dialect: SupportedDialect = 'postgres'
-    toStringType(type: ColumnType): string {
+    toSQLType(type: ColumnType): string {
         switch (type) {
             case ColumnType.STRING:
                 return 'varchar(255)'
@@ -43,7 +43,7 @@ export class PostgresSQLApi implements ISQLApi {
                 .alterTable(tableName)
                 .addColumn(
                     column.name,
-                    this.toStringType(column.type) as any,
+                    this.toSQLType(column.type) as any,
                     col => {
                         if (column.notNull && column.defaultSql) col = col.notNull().defaultTo(sql.raw(column.defaultSql))
                         else if (column.notNull) col = col.notNull()

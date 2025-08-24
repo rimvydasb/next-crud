@@ -32,13 +32,13 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
         createBuilder = createBuilder.addColumn('key', 'varchar', (col) => col.notNull())
         createBuilder = createBuilder.addColumn(
             'content',
-            this.sqlApi.toStringType(ColumnType.JSON) as any,
+            this.sqlApi.toSQLType(ColumnType.JSON) as any,
             (col) => col.notNull(),
         )
         createBuilder = createBuilder.addColumn('type', 'varchar', (col) => col.notNull())
         createBuilder = createBuilder.addColumn(
             'expired',
-            this.sqlApi.toStringType(ColumnType.BOOLEAN) as any,
+            this.sqlApi.toSQLType(ColumnType.BOOLEAN) as any,
         )
         createBuilder = createBuilder.addColumn(
             'created_at',
