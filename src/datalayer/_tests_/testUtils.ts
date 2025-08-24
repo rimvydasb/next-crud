@@ -75,9 +75,9 @@ export class DashboardConfigurationRepository extends AbstractJSONRepository<Dat
     }
 }
 
-export class SettingsRepository extends AbstractKeyValueRepository<DatabaseSchema, 'settings', string> {
+export class SettingsRepository extends AbstractKeyValueRepository<DatabaseSchema, 'settings'> {
     constructor(database: Kysely<DatabaseSchema>) {
-        super(database, {tableName: 'settings', valueType: ColumnType.STRING})
+        super(database, {tableName: 'settings'})
     }
 }
 
@@ -96,7 +96,7 @@ export interface DatabaseSchema {
     users: UsersTable
     request_data_cache: RequestDataCacheTable
     dashboard_configuration: JSONContentBaseTable<DashboardConfiguration>
-    settings: KeyValueBaseTable<string>
+    settings: KeyValueBaseTable
 }
 
 /**

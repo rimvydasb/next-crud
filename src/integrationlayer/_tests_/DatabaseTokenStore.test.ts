@@ -7,7 +7,7 @@ class MemoryRepository {
         return this.store.get(key) ?? null;
     }
     async setValue(key: string, value: TokenData): Promise<void> {
-        this.store.set(key, value);
+        this.store.set(key, value)
     }
 }
 
