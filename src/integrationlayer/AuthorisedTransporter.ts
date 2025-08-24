@@ -3,20 +3,19 @@ import ITokenStore from './ITokenStore';
 import IRequestCache from './IRequestCache';
 
 /** Options for {@link AuthorisedTransporter}. */
-interface TransporterOptions {
+export interface TransporterOptions {
     baseUrl: string;
     tokenStore?: ITokenStore;
     requestCache?: IRequestCache;
 }
 
 /**
- * Wrapper around `fetch` that injects a bearer token and caches GET
- * requests using the provided interfaces.
+ * Wrapper around `fetch` that injects a bearer token for each request.
  */
 export default class AuthorisedTransporter {
     private readonly baseUrl: string;
     private readonly tokenStore?: ITokenStore;
-    private readonly requestCache?: IRequestCache;
+    protected readonly requestCache?: IRequestCache;
 
     constructor({baseUrl, tokenStore, requestCache}: TransporterOptions) {
         if (!/^https?:\/\//.test(baseUrl)) {
@@ -28,9 +27,9 @@ export default class AuthorisedTransporter {
     }
 
     /**
-     * Execute an HTTP request and cache GET responses when a cache is provided.
+     * Execute an HTTP request.
      */
-    private async request<T>(method: string, urlPart: string, body?: unknown): Promise<T> {
+    protected async request<T>(method: string, urlPart: string, body?: unknown): Promise<T> {
         const url = new URL(urlPart, this.baseUrl).toString();
         const headers: Record<string, string> = {
             'Accept': 'application/json',
@@ -41,11 +40,6 @@ export default class AuthorisedTransporter {
             if (token) headers['Authorization'] = `Bearer ${token}`;
         }
 
-        if (method === 'GET' && this.requestCache) {
-            const cached = await this.requestCache.get<T>(url);
-            if (cached !== null) return cached;
-        }
-
         const response = await fetch(url, {
             method,
             headers,
@@ -54,11 +48,6 @@ export default class AuthorisedTransporter {
         if (!response.ok) {
             const text = await response.text();
             throw new Error(`Request failed: ${response.status} ${response.statusText}\n${text}`);
-        }
-        if (method === 'GET' && this.requestCache) {
-            const json = await response.json();
-            await this.requestCache.set(url, json);
-            return json;
         }
         if (response.status === 204) {
             return undefined as unknown as T;

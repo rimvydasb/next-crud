@@ -2,20 +2,11 @@ jest.mock('cross-fetch', () => jest.fn());
 
 import fetch from 'cross-fetch';
 import AuthorisedTransporter from '@integrationlayer/AuthorisedTransporter';
-import IRequestCache from '@integrationlayer/IRequestCache';
+import AuthorisedCachedTransporter from '@integrationlayer/AuthorisedCachedTransporter';
 import ITokenStore from '@integrationlayer/ITokenStore';
+import RequestDataRepository, {createTestDb} from '@datalayer/_tests_/testUtils';
 
 const mockedFetch = fetch as unknown as jest.Mock;
-
-class MemoryCache implements IRequestCache {
-    private store = new Map<string, any>();
-    async get<T>(key: string): Promise<T | null> {
-        return this.store.get(key) ?? null;
-    }
-    async set<T>(key: string, value: T): Promise<void> {
-        this.store.set(key, value);
-    }
-}
 
 class StaticTokenStore implements ITokenStore {
     constructor(private token: string) {}
@@ -28,21 +19,65 @@ class StaticTokenStore implements ITokenStore {
 }
 
 describe('AuthorisedTransporter', () => {
-    test('uses Authorization header and caches GET', async () => {
+    beforeEach(() => mockedFetch.mockReset());
+
+    test.each([
+        ['get', 'GET'],
+        ['post', 'POST', {a: 1}],
+        ['patch', 'PATCH', {a: 1}],
+        ['put', 'PUT', {a: 1}],
+        ['delete', 'DELETE'],
+    ])('uses Authorization header for %s', async (...args) => {
+        const [method, verb, body] = args as [string, string, unknown?];
         mockedFetch.mockResolvedValue({
             ok: true,
             status: 200,
             json: async () => ({value: 1}),
         });
-        const cache = new MemoryCache();
         const tokenStore = new StaticTokenStore('abc');
-        const transporter = new AuthorisedTransporter({baseUrl: 'https://example.com/', tokenStore, requestCache: cache});
-        const first = await transporter.get('data');
-        const second = await transporter.get('data');
+        const transporter = new AuthorisedTransporter({baseUrl: 'https://example.com/', tokenStore});
+        const fn = (transporter as any)[method].bind(transporter);
+        if (body !== undefined) await fn('data', body);
+        else await fn('data');
+        expect(mockedFetch).toHaveBeenCalledTimes(1);
+        const options = mockedFetch.mock.calls[0][1];
+        expect(options.method).toBe(verb);
+        expect(options.headers.Authorization).toBe('Bearer abc');
+    });
+
+    test('does not cache without IRequestCache', async () => {
+        mockedFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({value: 1}),
+        });
+        const tokenStore = new StaticTokenStore('abc');
+        const transporter = new AuthorisedTransporter({baseUrl: 'https://example.com/', tokenStore});
+        await transporter.get('data');
+        await transporter.get('data');
+        expect(mockedFetch).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('AuthorisedCachedTransporter', () => {
+    beforeEach(() => mockedFetch.mockReset());
+
+    test('caches GET responses via AbstractCacheRepository', async () => {
+        mockedFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({value: 1}),
+        });
+        const db = await createTestDb();
+        const repo = new RequestDataRepository(db);
+        await repo.ensureSchema();
+        const transporter = new AuthorisedCachedTransporter({baseUrl: 'https://example.com/', requestCache: repo});
+        const first = await transporter.getWithCache('data', 'TEST');
+        const second = await transporter.getWithCache('data', 'TEST');
         expect(first).toEqual({value: 1});
         expect(second).toEqual({value: 1});
         expect(mockedFetch).toHaveBeenCalledTimes(1);
-        const headers = mockedFetch.mock.calls[0][1].headers;
-        expect(headers.Authorization).toBe('Bearer abc');
+        await db.destroy();
     });
 });
+

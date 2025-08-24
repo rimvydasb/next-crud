@@ -1,11 +1,13 @@
+import {CacheEntry, TTL} from '@datalayer/AbstractCacheRepository';
+
 export default interface IRequestCache {
     /**
-     * Retrieve cached value for the url. Returns null when not found.
+     * Retrieve last cached value matching select criteria. Returns null when not found or expired.
      */
-    get<T>(url: string): Promise<T | null>;
+    getLast<T>(select: Partial<CacheEntry<T>>, ttl?: TTL): Promise<T | null>;
 
     /**
-     * Store value under the key.
+     * Persist the value under the provided cache key.
      */
-    set<T>(url: string, value: T): Promise<void>;
+    save<T>(record: {key: string; type: string; [key: string]: any}, content: T): Promise<boolean>;
 }
