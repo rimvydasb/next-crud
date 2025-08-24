@@ -15,7 +15,8 @@ Reusable TypeScript repository layer built on [Kysely](https://github.com/kysely
 
 ## Integration Layer
 
-- **AuthorisedTransporter** — wraps `fetch` to perform REST calls against a base URL, injects bearer tokens from an `ITokenStore`, and caches side-effect-free GET responses through an `IRequestCache`.
+- **AuthorisedTransporter** — wraps `fetch` to perform REST calls against a base URL and injects bearer tokens from an `ITokenStore`.
+- **AuthorisedCachedTransporter** — extends `AuthorisedTransporter` and adds `getWithCache` for caching side-effect-free GET responses through an `IRequestCache`.
 - **DatabaseTokenStore** — stores tokens in an `AbstractKeyValueRepository` and refreshes them via an `ITokenProvider`.
 
 ## API Usage
