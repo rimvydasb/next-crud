@@ -1,11 +1,11 @@
 export default interface IRequestCache {
     /**
-     * Retrieve cached value for the key. Returns null when not found.
+     * Retrieve cached value for the url. Returns null when not found.
      */
-    get<T>(key: string): Promise<T | null>;
+    get<T>(url: string): Promise<T | null>;
 
     /**
      * Store value under the key.
      */
-    set<T>(key: string, value: T): Promise<void>;
+    set<T>(url: string, value: T): Promise<void>;
 }
