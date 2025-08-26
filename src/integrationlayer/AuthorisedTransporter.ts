@@ -20,7 +20,7 @@ export default class AuthorisedTransporter {
      * Execute an HTTP request.
      */
     protected async request<T>(method: string, urlPart: string, body?: unknown): Promise<T> {
-        const url = new URL(urlPart, this.baseUrl).toString();
+        const url = new URL(this.normalizeUrlPart(urlPart), this.baseUrl).toString();
         const headers: Record<string, string> = {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
@@ -43,6 +43,13 @@ export default class AuthorisedTransporter {
             return undefined as unknown as T;
         }
         return await response.json();
+    }
+
+    /**
+     * Normalise URL parts to avoid leading or trailing slashes.
+     */
+    protected normalizeUrlPart(urlPart: string): string {
+        return urlPart.replace(/^\/+/u, '').replace(/\/+$/u, '');
     }
 
     public get<T>(urlPart: string): Promise<T> {

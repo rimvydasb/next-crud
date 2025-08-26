@@ -27,10 +27,11 @@ export default class AuthorisedCachedTransporter extends AuthorisedTransporter {
         ttl: TTL = TTL.UNLIMITED,
         cacheKeyParts?: Partial<CacheEntry<any>>,
     ): Promise<T> {
-        const cacheKey = {key: urlPart, type, ...cacheKeyParts};
+        const normalized = this.normalizeUrlPart(urlPart);
+        const cacheKey = {key: normalized, type, ...cacheKeyParts};
         const cached = await this.requestCache.getLast<T>(cacheKey, ttl);
         if (cached !== null) return cached;
-        const result = await this.get<T>(urlPart);
+        const result = await this.get<T>(normalized);
         await this.requestCache.save(cacheKey, result);
         return result;
     }
@@ -45,7 +46,8 @@ export default class AuthorisedCachedTransporter extends AuthorisedTransporter {
         ttl: TTL = TTL.UNLIMITED,
         cacheKeyParts?: Partial<CacheEntry<any>>,
     ) {
-        const cacheKey = {key: urlPart, type, ...cacheKeyParts};
+        const normalized = this.normalizeUrlPart(urlPart);
+        const cacheKey = {key: normalized, type, ...cacheKeyParts};
         return this.requestCache.getLast<T>(cacheKey, ttl);
     }
 }
