@@ -35,7 +35,7 @@ describe('AuthorisedTransporter', () => {
             json: async () => ({value: 1}),
         });
         const tokenStore = new StaticTokenStore('abc');
-        const transporter = new AuthorisedTransporter({baseUrl: 'https://example.com/', tokenStore});
+        const transporter = new AuthorisedTransporter('https://example.com/', tokenStore);
         const fn = (transporter as any)[method].bind(transporter);
         if (body !== undefined) await fn('data', body);
         else await fn('data');
@@ -52,11 +52,25 @@ describe('AuthorisedTransporter', () => {
             json: async () => ({value: 1}),
         });
         const tokenStore = new StaticTokenStore('abc');
-        const transporter = new AuthorisedTransporter({baseUrl: 'https://example.com/', tokenStore});
+        const transporter = new AuthorisedTransporter('https://example.com/', tokenStore);
         await transporter.get('data');
         await transporter.get('data');
         expect(mockedFetch).toHaveBeenCalledTimes(2);
     });
+
+    test.each(['data', '/data', 'data/', '/data/'])(
+        'concatenates baseUrl and %s correctly',
+        async (part) => {
+            mockedFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({}),
+            });
+            const transporter = new AuthorisedTransporter('https://example.com/');
+            await transporter.get(part);
+            expect(mockedFetch).toHaveBeenCalledWith('https://example.com/data', expect.any(Object));
+        },
+    );
 });
 
 describe('AuthorisedCachedTransporter', () => {
@@ -71,11 +85,29 @@ describe('AuthorisedCachedTransporter', () => {
         const db = await createTestDb();
         const repo = new RequestDataRepository(db);
         await repo.ensureSchema();
-        const transporter = new AuthorisedCachedTransporter({baseUrl: 'https://example.com/', requestCache: repo});
+        const transporter = new AuthorisedCachedTransporter('https://example.com/', repo);
         const first = await transporter.getWithCache('data', 'TEST');
         const second = await transporter.getWithCache('data', 'TEST');
         expect(first).toEqual({value: 1});
         expect(second).toEqual({value: 1});
+        expect(mockedFetch).toHaveBeenCalledTimes(1);
+        await db.destroy();
+    });
+
+    test('normalises cache keys regardless of slashes', async () => {
+        mockedFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({value: 1}),
+        });
+        const db = await createTestDb();
+        const repo = new RequestDataRepository(db);
+        await repo.ensureSchema();
+        const transporter = new AuthorisedCachedTransporter('https://example.com/', repo);
+        await transporter.getWithCache('/data', 'TEST');
+        await transporter.getWithCache('data/', 'TEST');
+        await transporter.getWithCache('/data/', 'TEST');
+        await transporter.getWithCache('data', 'TEST');
         expect(mockedFetch).toHaveBeenCalledTimes(1);
         await db.destroy();
     });
