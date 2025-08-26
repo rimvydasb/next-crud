@@ -3,9 +3,9 @@ import {Kysely, PostgresAdapter, sql, SqliteAdapter} from "kysely";
 
 export function detectDialect(db: Kysely<any>): SupportedDialect {
     const adapter = (db as any).getExecutor().adapter;
-    if (adapter instanceof PostgresAdapter) return 'postgres';
-    if (adapter instanceof SqliteAdapter) return 'sqlite';
-    throw new Error('Unsupported dialect');
+    if (adapter instanceof PostgresAdapter || adapter.constructor.name === 'PostgresAdapter' || adapter.dialect?.adapterName === 'postgres') return 'postgres';
+    if (adapter instanceof SqliteAdapter || adapter.constructor.name === 'SqliteAdapter' || adapter.dialect?.adapterName === 'sqlite') return 'sqlite';
+    throw new Error('Unsupported dialect for adapter: ' + adapter?.constructor?.name);
 }
 
 export function ensureValidId(id: unknown): asserts id is number {
