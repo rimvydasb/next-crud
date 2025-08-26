@@ -24,6 +24,36 @@ export interface CacheEntry<T> {
     [extra: string]: any
 }
 
+export function toJsonContent(value: any) {
+    if (!value) return null;
+
+    if (Array.isArray(value)) {
+        return {
+            "_type": "array",
+            "value": value
+        }
+    }
+
+    let detectedType = typeof value;
+
+    if (detectedType === 'object') {
+        return value;
+    }
+
+    return {
+        "_type": detectedType,
+        "value": value
+    }
+}
+
+export function fromJsonContent(value: any) {
+    if (!value) return null;
+    if (typeof value === 'object' && value._type) {
+        return value.value;
+    }
+    return value;
+}
+
 export abstract class AbstractCacheRepository<DST, TableName extends keyof DST & string> extends BaseTable<DST, TableName> {
 
     async ensureSchema(): Promise<void> {
@@ -152,7 +182,7 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
         return this.getLast<T>({type}, ttl)
     }
 
-    async save<T>(record: {key: string; type: string; [key: string]: any}, content: T): Promise<boolean> {
+    async save<T>(record: { key: string; type: string; [key: string]: any }, content: T): Promise<boolean> {
         if (content === undefined || content === null) return false
 
         const extraMap = new Map(this.extraColumns().map((c) => [c.name, c]))
@@ -200,7 +230,7 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
         }
     }
 
-    protected applyFilters<T extends {where: any}>(qb: T, select: Partial<CacheEntry<any>>): T {
+    protected applyFilters<T extends { where: any }>(qb: T, select: Partial<CacheEntry<any>>): T {
         let out: any = qb
         for (const [k, v] of Object.entries(select)) {
             if (v !== undefined) out = out.where(k, '=', v)
@@ -208,7 +238,7 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
         return out
     }
 
-    protected applyTtlFilters<T extends {where: any}>(qb: T, ttl: TTL): T {
+    protected applyTtlFilters<T extends { where: any }>(qb: T, ttl: TTL): T {
         let out: any = qb
         switch (ttl) {
             case TTL.NOT_EXPIRED:
@@ -246,9 +276,15 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
 
     protected nowMinusSecondsExpr(ttlSeconds: number) {
         if (this.dialect === 'postgres') {
-            return sql<Date>`now() - make_interval(secs => ${ttlSeconds})`
+            return sql<Date>`now() - make_interval(secs =>
+            ${ttlSeconds}
+            )`
         }
-        return sql<string>`datetime('now', '-' || ${ttlSeconds} || ' seconds')`
+        return sql<string>`datetime('now', '-' ||
+        ${ttlSeconds}
+        ||
+        ' seconds'
+        )`
     }
 
     protected asDate(dt: string | Date): Date {
@@ -256,7 +292,11 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
     }
 
     protected encodeJson(value: unknown): unknown {
-        return this.dialect === 'postgres' ? value : JSON.stringify(value)
+        if (this.dialect === 'sqlite') {
+            return JSON.stringify(value);
+        }
+
+        return toJsonContent(value);
     }
 
     protected encodeJsonOrNull(value: unknown | null | undefined): unknown | null {
@@ -265,16 +305,12 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
     }
 
     protected decodeJson<T>(value: unknown): T {
-        if (value == null) return value as T
-        if (this.dialect === 'postgres') return value as T
-        if (typeof value === 'string') {
-            try {
-                return JSON.parse(value) as T
-            } catch {
-                /* pass */
-            }
+        if (value == null) return value as T;
+        if (this.dialect === 'sqlite') {
+            return fromJsonContent(typeof value === 'string' ? JSON.parse(value) : value) as T
         }
-        return value as T
+
+        return fromJsonContent(value as T);
     }
 }
 

@@ -117,7 +117,7 @@ export async function createTestDb(): Promise<Kysely<DatabaseSchema>> {
                 host: 'localhost',
                 port: 5435,
                 user: 'test_user',
-                password: 'password',
+                password: 'test_pass',
                 database: 'test_db'
             })
         })
