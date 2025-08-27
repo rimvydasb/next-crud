@@ -1,6 +1,6 @@
 import {Generated, Insertable, sql, Updateable} from 'kysely'
 import {ColumnType, TimestampDefault} from './entities'
-import {addIdColumn, createdAtDefaultSql} from './utilities'
+import {addIdColumn, createdAtDefaultSql, toJsonContent, fromJsonContent} from './utilities'
 import {BaseTable} from './BaseTable'
 
 export enum TTL {
@@ -22,36 +22,6 @@ export interface CacheEntry<T> {
     expired: boolean | number | null
     createdAt: Date
     [extra: string]: any
-}
-
-export function toJsonContent(value: any) {
-    if (!value) return null;
-
-    if (Array.isArray(value)) {
-        return {
-            "_type": "array",
-            "value": value
-        }
-    }
-
-    let detectedType = typeof value;
-
-    if (detectedType === 'object') {
-        return value;
-    }
-
-    return {
-        "_type": detectedType,
-        "value": value
-    }
-}
-
-export function fromJsonContent(value: any) {
-    if (!value) return null;
-    if (typeof value === 'object' && value._type) {
-        return value.value;
-    }
-    return value;
 }
 
 export abstract class AbstractCacheRepository<DST, TableName extends keyof DST & string> extends BaseTable<DST, TableName> {
@@ -292,25 +262,18 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
     }
 
     protected encodeJson(value: unknown): unknown {
-        if (this.dialect === 'sqlite') {
-            return JSON.stringify(value);
-        }
-
-        return toJsonContent(value);
+        const json = toJsonContent(value)
+        return this.dialect === 'sqlite' ? JSON.stringify(json) : json
     }
 
     protected encodeJsonOrNull(value: unknown | null | undefined): unknown | null {
-        if (value == null) return null
-        return this.encodeJson(value)
+        return value == null ? null : this.encodeJson(value)
     }
 
     protected decodeJson<T>(value: unknown): T {
-        if (value == null) return value as T;
-        if (this.dialect === 'sqlite') {
-            return fromJsonContent(typeof value === 'string' ? JSON.parse(value) : value) as T
-        }
-
-        return fromJsonContent(value as T);
+        if (value == null) return value as T
+        const raw = this.dialect === 'sqlite' && typeof value === 'string' ? JSON.parse(value) : value
+        return fromJsonContent(raw) as T
     }
 }
 

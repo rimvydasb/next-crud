@@ -51,16 +51,59 @@ describe('DatabaseRequestDataCache', () => {
         }
     })
 
-    it('save() should insert array', async () => {
-        const ok = await cache.save(sampleKey, [1, 2, 3])
-        expect(ok).toBe(true);
-        const rows = await cache.getAll({
-            type: 'sampleType',
-        })
+    it('save() should insert primitive values and arrays', async () => {
+        const cases: any[] = [
+            [1, 2, 3],
+            42,
+            'hello',
+            true,
+        ]
+
+        for (const value of cases) {
+            const ok = await cache.save(sampleKey, value)
+            expect(ok).toBe(true)
+            const rows = await cache.getAll({type: 'sampleType'})
+            expect(rows).toHaveLength(1)
+            const row = rows[0] as any
+            expect(row.content).toEqual(value)
+            await db.deleteFrom('request_data_cache').execute()
+        }
+    })
+
+    it('save() should not unmarshal JSON-like strings', async () => {
+        const invalid = '{a: broken...}'
+        const ok = await cache.save(sampleKey, invalid)
+        expect(ok).toBe(true)
+        const rows = await cache.getAll({type: 'sampleType'})
         expect(rows).toHaveLength(1)
         const row = rows[0] as any
-        expect(row.content).toEqual([1, 2, 3]);
-    });
+        expect(row.content).toBe(invalid)
+    })
+
+    it('save() should reject circular structures', async () => {
+        const circular: any = {a: 1}
+        circular.self = circular
+        await expect(cache.save(sampleKey, circular)).rejects.toThrow(
+            'Converting circular structure to JSON',
+        )
+        const rows = await cache.getAll({type: 'sampleType'})
+        expect(rows).toHaveLength(0)
+    })
+
+    it('save() should surface SQL constraint errors', async () => {
+        const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
+        const ok = await cache.save(
+            {key: true as any, type: null as any, reference: {a: 'a'} as any},
+            sampleData,
+        )
+        expect(ok).toBe(false)
+        expect(spy).toHaveBeenCalled()
+        const message = String(spy.mock.calls[0][1])
+        expect(message).toMatch(/NOT NULL|constraint|bind numbers/i)
+        const rows = await cache.getAll({type: 'sampleType'})
+        expect(rows).toHaveLength(0)
+        spy.mockRestore()
+    })
 
     it('getLast() should return null when no entry exists', async () => {
         const result = await cache.getLast(sampleKey)

@@ -37,3 +37,33 @@ export async function createPriorityIndex(db: Kysely<any>, tableName: string) {
             String(tableName)
     )} (priority)`.execute(db)
 }
+
+export function toJsonContent(value: any) {
+    if (value == null) return null
+
+    if (Array.isArray(value)) {
+        return {
+            _type: 'array',
+            value,
+        }
+    }
+
+    const detectedType = typeof value
+
+    if (detectedType === 'object') {
+        return value
+    }
+
+    return {
+        _type: detectedType,
+        value,
+    }
+}
+
+export function fromJsonContent(value: any) {
+    if (value == null) return null
+    if (typeof value === 'object' && value._type) {
+        return value.value
+    }
+    return value
+}
