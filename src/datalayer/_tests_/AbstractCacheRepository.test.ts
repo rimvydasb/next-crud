@@ -62,6 +62,28 @@ describe('DatabaseRequestDataCache', () => {
         expect(row.content).toEqual([1, 2, 3]);
     });
 
+    it('save() should insert number', async () => {
+        const ok = await cache.save(sampleKey, 42)
+        expect(ok).toBe(true)
+        const rows = await cache.getAll({
+            type: 'sampleType',
+        })
+        expect(rows).toHaveLength(1)
+        const row = rows[0] as any
+        expect(row.content).toBe(42)
+    })
+
+    it('save() should insert string', async () => {
+        const ok = await cache.save(sampleKey, 'hello')
+        expect(ok).toBe(true)
+        const rows = await cache.getAll({
+            type: 'sampleType',
+        })
+        expect(rows).toHaveLength(1)
+        const row = rows[0] as any
+        expect(row.content).toBe('hello')
+    })
+
     it('getLast() should return null when no entry exists', async () => {
         const result = await cache.getLast(sampleKey)
         expect(result).toBeNull()
