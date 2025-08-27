@@ -39,3 +39,8 @@
 - Refactor for clarity without changing public APIs.
 - Use 4 spaces indent, line length is 120 columns.
 
+## Tips for Agents
+- Use `rg` for code search to avoid slow recursive scans.
+- Place new tests in `_tests_` folders and name them `*.test.ts`.
+- Update `.env.example` whenever new environment variables are introduced.
+
