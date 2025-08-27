@@ -83,16 +83,23 @@ describe('DatabaseRequestDataCache', () => {
     it('save() should reject circular structures', async () => {
         const circular: any = {a: 1}
         circular.self = circular
-        await expect(cache.save(sampleKey, circular)).rejects.toThrow(/circular/)
+        await expect(cache.save(sampleKey, circular)).rejects.toThrow(
+            'Converting circular structure to JSON',
+        )
         const rows = await cache.getAll({type: 'sampleType'})
         expect(rows).toHaveLength(0)
     })
 
-    it('save() should return false on SQL errors', async () => {
+    it('save() should surface SQL constraint errors', async () => {
         const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
-        const ok = await cache.save({...sampleKey, bogus: 1} as any, sampleData)
+        const ok = await cache.save(
+            {key: true as any, type: null as any, reference: {a: 'a'} as any},
+            sampleData,
+        )
         expect(ok).toBe(false)
         expect(spy).toHaveBeenCalled()
+        const message = String(spy.mock.calls[0][1])
+        expect(message).toMatch(/NOT NULL|constraint|bind numbers/i)
         const rows = await cache.getAll({type: 'sampleType'})
         expect(rows).toHaveLength(0)
         spy.mockRestore()
