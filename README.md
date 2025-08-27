@@ -6,12 +6,17 @@ Reusable TypeScript repository layer built on [Kysely](https://github.com/kysely
 - [x] Base table columns: `id`, `priority`, `deleted_at`, `created_at`
 - [x] CRUD operations
 - [x] Soft delete, hard delete, and restore
-- [x] Stable priority updates that shift other rows
-- [x] Schema management via `ensureSchema()` and `syncColumns()`
+- [x] Priority updates that shift other rows *(experimental)*
+- [x] Schema management via `ensureSchema()`
 - [x] `BaseTable` abstract class for shared table utilities
 - [x] `AbstractJSONRepository` for storing typed JSON content
 - [x] `AbstractCacheRepository` for simple cache management with TTL
 - [x] `AbstractKeyValueRepository` for simple key/value storage
+
+## Prerequisites
+
+- Node.js 22+
+- PostgreSQL database (SQLite is used for tests)
 
 ## Integration Layer
 
@@ -150,6 +155,8 @@ npm run build
 Run tests:
 ```bash
 npm test
+# PostgreSQL-specific tests
+npm run test:pg
 ```
 
 ## Maintenance
@@ -161,3 +168,7 @@ ncu
 # Update dependencies
 ncu -u
 ```
+
+## License
+
+Licensed under the Apache 2.0 License. See [LICENSE](LICENSE) for details.
