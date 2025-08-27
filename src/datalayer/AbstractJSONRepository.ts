@@ -11,7 +11,7 @@ import {IJSONContent} from './IJSONContent'
 export abstract class AbstractJSONRepository<DST, TableName extends keyof DST & string, Content extends IJSONContent> extends AbstractRepository<DST, TableName> {
     private readonly supportedTypes: string[]
 
-    constructor(
+    protected constructor(
         database: Kysely<DST>,
         tableNameOrConfig: TableName | TableConfig<TableName>,
         supportedTypes: string[],

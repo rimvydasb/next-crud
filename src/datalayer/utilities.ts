@@ -33,11 +33,14 @@ export function addIdColumn(dialect: SupportedDialect, builder: ReturnType<Kysel
 // Create a non-unique index on priority in a portable way
 export async function createPriorityIndex(db: Kysely<any>, tableName: string) {
     const indexName = `${String(tableName)}_priority_idx`
-    await sql`CREATE INDEX IF NOT EXISTS ${sql.raw(indexName)} ON ${sql.raw(
-            String(tableName)
-    )} (priority)`.execute(db)
+    /*language=TEXT*/
+    await sql`CREATE INDEX IF NOT EXISTS ${sql.raw(indexName)} ON ${sql.raw(String(tableName))} (priority)`.execute(db)
 }
 
+/**
+ * Transform a value into a JSON-storable format that preserves its type.
+ * This must be done for Postgres SQL JSONB columns
+ */
 export function toJsonContent(value: any) {
     if (value == null) return null
 
@@ -60,6 +63,10 @@ export function toJsonContent(value: any) {
     }
 }
 
+/**
+ * Revert the transformation done by {@link toJsonContent}.
+ * Used on the data read from JSON columns.
+ */
 export function fromJsonContent(value: any) {
     if (value == null) return null
     if (typeof value === 'object' && value._type) {

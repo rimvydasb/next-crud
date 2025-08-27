@@ -1,6 +1,6 @@
 import {Generated, Insertable, sql, Updateable} from 'kysely'
 import {ColumnType, TimestampDefault} from './entities'
-import {addIdColumn, createdAtDefaultSql, toJsonContent, fromJsonContent} from './utilities'
+import {addIdColumn, createdAtDefaultSql, fromJsonContent, toJsonContent} from './utilities'
 import {BaseTable} from './BaseTable'
 
 export enum TTL {
@@ -21,6 +21,7 @@ export interface CacheEntry<T> {
     content: T
     expired: boolean | number | null
     createdAt: Date
+
     [extra: string]: any
 }
 
@@ -28,23 +29,13 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
 
     async ensureSchema(): Promise<void> {
         let createBuilder = this.db.schema.createTable(this.tableName).ifNotExists()
+
         createBuilder = addIdColumn(this.dialect, createBuilder)
-        createBuilder = createBuilder.addColumn('key', 'varchar', (col) => col.notNull())
-        createBuilder = createBuilder.addColumn(
-            'content',
-            this.sqlApi.toSQLType(ColumnType.JSON) as any,
-            (col) => col.notNull(),
-        )
-        createBuilder = createBuilder.addColumn('type', 'varchar', (col) => col.notNull())
-        createBuilder = createBuilder.addColumn(
-            'expired',
-            this.sqlApi.toSQLType(ColumnType.BOOLEAN) as any,
-        )
-        createBuilder = createBuilder.addColumn(
-            'created_at',
-            'timestamp',
-            (col) => col.notNull().defaultTo(sql.raw(createdAtDefaultSql())),
-        )
+            .addColumn('key', 'varchar', (col) => col.notNull())
+            .addColumn('content', this.sqlApi.toSQLType(ColumnType.JSON) as any, (col) => col.notNull())
+            .addColumn('type', 'varchar', (col) => col.notNull())
+            .addColumn('expired', this.sqlApi.toSQLType(ColumnType.BOOLEAN) as any,)
+            .addColumn('created_at', 'timestamp', (col) => col.notNull().defaultTo(sql.raw(createdAtDefaultSql())))
 
         createBuilder = this.applyExtraColumns(createBuilder)
 
@@ -160,6 +151,7 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
             key: record.key,
             type: record.type,
             content: this.encodeJson(content),
+            /*language=TEXT*/
             created_at: sql`CURRENT_TIMESTAMP`,
             expired: this.expiredValue(false),
         }
@@ -229,15 +221,13 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
     }
 
     protected notExpiredPredicate() {
-        return this.dialect === 'postgres'
-            ? sql<boolean>`expired IS NOT TRUE`
-            : sql<boolean>`COALESCE(expired, 0) = 0`
+        /*language=TEXT*/
+        return this.dialect === 'postgres' ? sql<boolean>`expired IS NOT TRUE` : sql<boolean>`COALESCE(expired, 0) = 0`
     }
 
     protected expiredPredicate() {
-        return this.dialect === 'postgres'
-            ? sql<boolean>`expired IS TRUE`
-            : sql<boolean>`expired = 1`
+        /*language=TEXT*/
+        return this.dialect === 'postgres' ? sql<boolean>`expired IS TRUE` : sql<boolean>`expired = 1`
     }
 
     protected expiredValue(val: boolean) {

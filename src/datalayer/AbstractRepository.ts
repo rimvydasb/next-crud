@@ -95,6 +95,7 @@ export abstract class AbstractRepository<DST, TableName extends keyof DST & stri
 
             if (this.hasPriority && !providedPriority) {
                 await (trx.updateTable(this.tableName as string) as any)
+                    /*language=TEXT*/
                     .set({priority: sql`id`} as unknown as Updateable<DST[TableName]>)
                     .where('priority', 'is', null)
                     .execute()
@@ -157,6 +158,7 @@ export abstract class AbstractRepository<DST, TableName extends keyof DST & stri
             return undefined
         }
         return (await (this.db.updateTable(this.tableName) as any)
+            /*language=TEXT*/
             .set({deleted_at: sql`CURRENT_TIMESTAMP`} as unknown as Updateable<DST[TableName]>)
             .where('id', '=', id)
             .where('deleted_at', 'is', null)
@@ -188,8 +190,8 @@ export abstract class AbstractRepository<DST, TableName extends keyof DST & stri
 
     /**
      * Move a row to the target priority. Keeps priorities unique by shifting others.
-     * - If currentPriority < targetPriority: shift (current+1..target) down by 1
-     * - If currentPriority > targetPriority: shift (target..current-1) up by 1
+     * - If currentPriority < targetPriority: shift (current+1...target) down by 1
+     * - If currentPriority > targetPriority: shift (target...current-1) up by 1
      */
     async updatePriority(
         id: number,
@@ -224,12 +226,14 @@ export abstract class AbstractRepository<DST, TableName extends keyof DST & stri
 
             if (currentPriority < targetPriority) {
                 await (trx.updateTable(this.tableName as string) as any)
+                    /*language=TEXT*/
                     .set({priority: sql`priority - 1`} as unknown as Updateable<DST[TableName]>)
                     .where('priority', '>', currentPriority)
                     .where('priority', '<=', targetPriority)
                     .execute()
             } else {
                 await (trx.updateTable(this.tableName as string) as any)
+                    /*language=TEXT*/
                     .set({priority: sql`priority + 1`} as unknown as Updateable<DST[TableName]>)
                     .where('priority', '>=', targetPriority)
                     .where('priority', '<', currentPriority)

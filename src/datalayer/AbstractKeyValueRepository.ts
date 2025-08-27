@@ -48,7 +48,7 @@ export abstract class AbstractKeyValueRepository<
     DST,
     TableName extends keyof DST & string
 > extends BaseTable<DST, TableName> {
-    constructor(database: Kysely<DST>, config: KeyValueTableConfig<TableName>) {
+    protected constructor(database: Kysely<DST>, config: KeyValueTableConfig<TableName>) {
         super(database, config.tableName);
     }
 
@@ -56,6 +56,7 @@ export abstract class AbstractKeyValueRepository<
         if (this.dialect === "sqlite") {
             return value === null ? null : JSON.stringify(value);
         }
+        /*language=TEXT*/
         return sql`${JSON.stringify(value)}::jsonb`;
     }
 
@@ -82,9 +83,9 @@ export abstract class AbstractKeyValueRepository<
 
         await builder.execute();
         const indexName = `${String(this.tableName)}_key_idx`;
-        await sql`CREATE INDEX IF NOT EXISTS ${sql.raw(indexName)} ON ${sql.raw(
-                String(this.tableName)
-        )} (key)`.execute(this.db);
+
+        /*language=TEXT*/
+        await sql`CREATE INDEX IF NOT EXISTS ${sql.raw(indexName)} ON ${sql.raw(String(this.tableName))} (key)`.execute(this.db);
     }
 
     async getAllKeys(): Promise<string[]> {
@@ -112,6 +113,7 @@ export abstract class AbstractKeyValueRepository<
             .set(
                 {
                     value: dbJson,
+                    /*language=TEXT*/
                     updated_at: sql`CURRENT_TIMESTAMP`,
                 } as unknown as Updateable<DST[TableName]>
             )
@@ -125,6 +127,7 @@ export abstract class AbstractKeyValueRepository<
                     {
                         key,
                         value: dbJson,
+                        /*language=TEXT*/
                         updated_at: sql`CURRENT_TIMESTAMP`,
                     } as unknown as Insertable<DST[TableName]>
                 )
@@ -155,6 +158,7 @@ export abstract class AbstractKeyValueRepository<
                     .set(
                         {
                             value: dbJson,
+                            /*language=TEXT*/
                             updated_at: sql`CURRENT_TIMESTAMP`,
                         } as unknown as Updateable<DST[TableName]>
                     )
@@ -168,6 +172,7 @@ export abstract class AbstractKeyValueRepository<
                             {
                                 key,
                                 value: dbJson,
+                                /*language=TEXT*/
                                 updated_at: sql`CURRENT_TIMESTAMP`,
                             } as unknown as Insertable<DST[TableName]>
                         )

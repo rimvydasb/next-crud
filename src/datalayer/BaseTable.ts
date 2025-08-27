@@ -39,14 +39,5 @@ export abstract class BaseTable<DST, TableName extends keyof DST & string> {
     }
 
     abstract ensureSchema(): Promise<void>
-
-    async syncColumns(schemaName: string = 'public'): Promise<void> {
-        await this.sqlApi.syncColumns(
-            this.db,
-            this.tableName as string,
-            this.extraColumns(),
-            schemaName,
-        )
-    }
 }
 
