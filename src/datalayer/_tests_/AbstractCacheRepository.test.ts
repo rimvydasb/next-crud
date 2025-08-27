@@ -51,37 +51,51 @@ describe('DatabaseRequestDataCache', () => {
         }
     })
 
-    it('save() should insert array', async () => {
-        const ok = await cache.save(sampleKey, [1, 2, 3])
-        expect(ok).toBe(true);
-        const rows = await cache.getAll({
-            type: 'sampleType',
-        })
-        expect(rows).toHaveLength(1)
-        const row = rows[0] as any
-        expect(row.content).toEqual([1, 2, 3]);
-    });
+    it('save() should insert primitive values and arrays', async () => {
+        const cases: any[] = [
+            [1, 2, 3],
+            42,
+            'hello',
+            true,
+        ]
 
-    it('save() should insert number', async () => {
-        const ok = await cache.save(sampleKey, 42)
-        expect(ok).toBe(true)
-        const rows = await cache.getAll({
-            type: 'sampleType',
-        })
-        expect(rows).toHaveLength(1)
-        const row = rows[0] as any
-        expect(row.content).toBe(42)
+        for (const value of cases) {
+            const ok = await cache.save(sampleKey, value)
+            expect(ok).toBe(true)
+            const rows = await cache.getAll({type: 'sampleType'})
+            expect(rows).toHaveLength(1)
+            const row = rows[0] as any
+            expect(row.content).toEqual(value)
+            await db.deleteFrom('request_data_cache').execute()
+        }
     })
 
-    it('save() should insert string', async () => {
-        const ok = await cache.save(sampleKey, 'hello')
+    it('save() should not unmarshal JSON-like strings', async () => {
+        const invalid = '{a: broken...}'
+        const ok = await cache.save(sampleKey, invalid)
         expect(ok).toBe(true)
-        const rows = await cache.getAll({
-            type: 'sampleType',
-        })
+        const rows = await cache.getAll({type: 'sampleType'})
         expect(rows).toHaveLength(1)
         const row = rows[0] as any
-        expect(row.content).toBe('hello')
+        expect(row.content).toBe(invalid)
+    })
+
+    it('save() should reject circular structures', async () => {
+        const circular: any = {a: 1}
+        circular.self = circular
+        await expect(cache.save(sampleKey, circular)).rejects.toThrow(/circular/)
+        const rows = await cache.getAll({type: 'sampleType'})
+        expect(rows).toHaveLength(0)
+    })
+
+    it('save() should return false on SQL errors', async () => {
+        const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
+        const ok = await cache.save({...sampleKey, bogus: 1} as any, sampleData)
+        expect(ok).toBe(false)
+        expect(spy).toHaveBeenCalled()
+        const rows = await cache.getAll({type: 'sampleType'})
+        expect(rows).toHaveLength(0)
+        spy.mockRestore()
     })
 
     it('getLast() should return null when no entry exists', async () => {
