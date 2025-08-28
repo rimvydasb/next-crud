@@ -116,4 +116,76 @@ describe('AbstractJSONRepository', () => {
             repository.updateWithContent(created.id!, {type: 'PANEL'} as any),
         ).rejects.toThrow('Unsupported type')
     })
+
+    test('serializes like JSON.stringify (drops undefined) on create', async () => {
+        const complex = {
+            type: 'DASHBOARD' as const,
+            title: 'Complex',
+            description: 'with undefineds',
+            panelsIds: [1, 2, 3],
+            variables: {
+                a: 1,
+                b: undefined,
+                arr: [1, undefined, 3, {x: undefined, y: 2}],
+                nested: {keep: true, drop: undefined},
+            },
+            extra: undefined as unknown,
+        }
+        const expected = JSON.parse(
+            JSON.stringify({
+                title: complex.title,
+                description: complex.description,
+                panelsIds: complex.panelsIds,
+                variables: complex.variables,
+                // 'extra' should be dropped
+            }),
+        )
+
+        const created = await repository.createWithContent(complex as any)
+        const fetched = await repository.getByIdWithContent(created.id!)
+        expect(fetched).toBeDefined()
+        // Compare only JSON content parts
+        expect({
+            title: fetched!.title,
+            description: fetched!.description,
+            panelsIds: fetched!.panelsIds,
+            variables: fetched!.variables,
+        }).toEqual(expected)
+    })
+
+    test('updateWithContent drops keys set to undefined and handles arrays', async () => {
+        const created = await repository.createWithContent({
+            type: 'DASHBOARD',
+            title: 'A',
+            description: 'B',
+            panelsIds: [1, 2],
+            variables: {x: 1, y: 2, arr: [1, 2]},
+        })
+
+        const updated = await repository.updateWithContent(created.id!, {
+            description: undefined as any, // should drop description
+            variables: {x: undefined as any, arr: [undefined as any, 3]}, // drop x, array undefined -> null
+        })
+
+        // Expected after JSON.stringify merge behavior
+        expect(updated).toBeDefined()
+        // Title remains
+        expect(updated!.title).toBe('A')
+        // description dropped -> absent; since our Content interface requires description, we assert behavior via deep equality on JSON content fields
+        const picked = {
+            title: updated!.title,
+            // description should be missing -> comparing against JSONified expectation
+            panelsIds: updated!.panelsIds,
+            variables: updated!.variables,
+        }
+        const expected = JSON.parse(
+            JSON.stringify({
+                title: 'A',
+                panelsIds: [1, 2],
+                // variables are replaced (shallow merge), not deep-merged
+                variables: {arr: [null, 3]},
+            }),
+        )
+        expect(picked).toEqual(expected)
+    })
 })

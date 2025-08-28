@@ -62,5 +62,20 @@ describe('AbstractKeyValueRepository', () => {
         await expect(repo.setValue('CIRC', circular)).rejects.toThrow('Converting circular structure to JSON')
         expect(await repo.getValue('CIRC')).toEqual({a: 1})
     })
-})
 
+    test('stores complex JSON like JSON.stringify (drops undefined)', async () => {
+        const complex = {
+            a: 1,
+            b: [1, undefined, 3, {x: undefined, y: 2}],
+            c: {d: 'e', u: undefined, nestedArr: [undefined, 'x']},
+            f: null,
+            u: undefined,
+        }
+        const expected = JSON.parse(JSON.stringify(complex))
+        await repo.setValue('COMPLEX', complex)
+        const got = await repo.getValue('COMPLEX')
+        expect(got).toEqual(expected)
+        const exported = await repo.exportData()
+        expect(exported.COMPLEX).toEqual(expected)
+    })
+})
