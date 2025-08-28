@@ -42,11 +42,10 @@ export abstract class AbstractRepository<DST, TableName extends keyof DST & stri
 
     // Create table if missing: base + extra columns
     async ensureSchema(): Promise<void> {
-        let createBuilder = this.db.schema
-            .createTable(this.tableName)
-            .ifNotExists()
-
-        createBuilder = addIdColumn(this.dialect, createBuilder)
+        let createBuilder = addIdColumn(
+            this.dialect,
+            this.db.schema.createTable(this.tableName).ifNotExists(),
+        )
 
         if (this.hasPriority) {
             createBuilder = createBuilder.addColumn('priority', 'integer')
@@ -57,7 +56,7 @@ export abstract class AbstractRepository<DST, TableName extends keyof DST & stri
 
         createBuilder = createBuilder.addColumn(
             'created_at',
-            this.dialect === 'postgres' ? 'timestamp' : 'timestamp',
+            'timestamp',
             (col) => col.notNull().defaultTo(sql.raw(createdAtDefaultSql())),
         )
 
