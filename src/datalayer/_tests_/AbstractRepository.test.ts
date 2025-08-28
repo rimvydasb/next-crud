@@ -57,7 +57,7 @@ describe('UsersRepository CRUD', () => {
         const u2 = await repo.create({name: 'B', surname: 'B', telephone_number: '2', priority: 1})
         const u3 = await repo.create({name: 'C', surname: 'C', telephone_number: '3', priority: 2})
         await repo.updatePriority(u3.id, 1)
-        const list = await repo.list({orderBy: {column: 'priority'}})
+        const list = await repo.getAll({orderBy: {column: 'priority'}})
         expect(list.map((u) => u.id)).toEqual([u1.id, u3.id, u2.id])
     })
 })
@@ -97,5 +97,28 @@ describe('AbstractRepository feature toggles', () => {
 
         const c2 = await repo.create({name: 'A', surname: 'B', telephone_number: '2'})
         await expect(repo.updatePriority(c2.id, 1)).rejects.toThrow('Priority feature not enabled')
+    })
+})
+
+describe('AbstractRepository getAll', () => {
+    let db: Kysely<DatabaseSchema>
+    let repo: UsersRepository
+
+    beforeEach(async () => {
+        db = await createTestDb()
+        repo = new UsersRepository(db)
+        await repo.ensureSchema()
+    })
+
+    afterEach(async () => {
+        await db.destroy()
+    })
+
+    test('getAll returns all users', async () => {
+        await repo.create({name: 'A', surname: 'A', telephone_number: '1'})
+        await repo.create({name: 'B', surname: 'B', telephone_number: '2'})
+        const users = await repo.getAll({orderBy: {column: 'id'}})
+        expect(users).toHaveLength(2)
+        expect(users.map(u => u.name)).toEqual(['A', 'B'])
     })
 })

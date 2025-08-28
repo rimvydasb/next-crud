@@ -42,7 +42,7 @@ describe('JSONTableDataHandler CRUD flow', () => {
 
         const repo = new DashboardConfigurationRepository(db)
         await repo.ensureSchema()
-        const inDb = await repo.getByIdWithContent(created.id!)
+        const inDb = await repo.jsonGetById(created.id!)
         expect(inDb?.title).toBe('Main')
     })
 
@@ -50,7 +50,7 @@ describe('JSONTableDataHandler CRUD flow', () => {
         expect.assertions(2)
         const repo = new DashboardConfigurationRepository(db)
         await repo.ensureSchema()
-        const created = await repo.createWithContent({
+        const created = await repo.jsonCreate({
             type: 'DASHBOARD',
             title: 'Dash',
             description: 'd',
@@ -68,7 +68,7 @@ describe('JSONTableDataHandler CRUD flow', () => {
         expect.assertions(3)
         const repo = new DashboardConfigurationRepository(db)
         await repo.ensureSchema()
-        const created = await repo.createWithContent({
+        const created = await repo.jsonCreate({
             type: 'DASHBOARD',
             title: 'Old',
             description: 'before',
@@ -79,7 +79,7 @@ describe('JSONTableDataHandler CRUD flow', () => {
         const {req, res} = createMock('PATCH', {id: created.id, description: 'after'})
         await new DashboardHandler(req, res).handle()
         expect(res.statusCode).toBe(200)
-        const updated = await repo.getByIdWithContent(created.id!)
+        const updated = await repo.jsonGetById(created.id!)
         expect(updated?.description).toBe('after')
         expect((res as any).data[0].description).toBe('after')
     })
@@ -88,7 +88,7 @@ describe('JSONTableDataHandler CRUD flow', () => {
         expect.assertions(3)
         const repo = new DashboardConfigurationRepository(db)
         await repo.ensureSchema()
-        const created = await repo.createWithContent({
+        const created = await repo.jsonCreate({
             type: 'DASHBOARD',
             title: 'ToDelete',
             description: 'd',
@@ -99,9 +99,33 @@ describe('JSONTableDataHandler CRUD flow', () => {
         const {req, res} = createMock('DELETE', {id: created.id})
         await new DashboardHandler(req, res).handle()
         expect(res.statusCode).toBe(200)
-        const deleted = await repo.getByIdWithContent(created.id!)
+        const deleted = await repo.jsonGetById(created.id!)
         expect(deleted).toBeUndefined()
         expect((res as any).data[0].id).toBe(created.id)
+    })
+
+    test('lists configurations by type', async () => {
+        expect.assertions(2)
+        const repo = new DashboardConfigurationRepository(db)
+        await repo.ensureSchema()
+        await repo.jsonCreate({
+            type: 'DASHBOARD',
+            title: 'One',
+            description: 'd1',
+            panelsIds: [],
+            variables: {},
+        })
+        await repo.jsonCreate({
+            type: 'DASHBOARD',
+            title: 'Two',
+            description: 'd2',
+            panelsIds: [],
+            variables: {},
+        })
+        const {req, res} = createMock('GET', undefined, {type: 'DASHBOARD'})
+        await new DashboardHandler(req, res).handle()
+        expect(res.statusCode).toBe(200)
+        expect((res as any).data).toHaveLength(2)
     })
 })
 

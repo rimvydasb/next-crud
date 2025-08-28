@@ -45,8 +45,8 @@ class DashboardRepository extends AbstractJSONRepository<DatabaseSchema, 'dashbo
 
 const repo = new DashboardRepository(db)
 await repo.ensureSchema()
-const created = await repo.createWithContent({type: 'DASHBOARD', title: 'Main'}) // => { id: 1, priority: 0, type: 'DASHBOARD', title: 'Main' }
-const fetched = await repo.getByIdWithContent(created.id!) // => { id: 1, priority: 0, type: 'DASHBOARD', title: 'Main' }
+const created = await repo.jsonCreate({type: 'DASHBOARD', title: 'Main'}) // => { id: 1, priority: 0, type: 'DASHBOARD', title: 'Main' }
+const fetched = await repo.jsonGetById(created.id!) // => { id: 1, priority: 0, type: 'DASHBOARD', title: 'Main' }
 ```
 
 #### AbstractCacheRepository
@@ -130,7 +130,7 @@ export default (req: NextApiRequest, res: NextApiResponse) =>
 
 ##### Supported HTTP methods
 
-- **GET** `?id=<id>` → fetch a single row, omit `id` to list all rows. Response: array of rows.
+- **GET** `?id=<id>` → fetch a single row, omit `id` to fetch all rows. Response: array of rows.
 - **POST** body `{...}` → create a row. Response: array with the created row.
 - **PATCH** body `{id, ...fields}` → update a row. Body `{id, priority}` updates only priority.
 - **DELETE** body `{id}` → soft delete a row. Response: array with the deleted row.

@@ -122,7 +122,7 @@ export abstract class AbstractRepository<DST, TableName extends keyof DST & stri
         return (await query.executeTakeFirst()) as Selectable<DST[TableName]> | undefined
     }
 
-    async list(options: {
+    async getAll(options: {
         includeDeleted?: boolean
         limit?: number
         offset?: number

@@ -28,11 +28,11 @@ describe('AbstractJSONRepository', () => {
             panelsIds: [1, 2],
             variables: {foo: 'bar'},
         }
-        const created = await repository.createWithContent(config)
+        const created = await repository.jsonCreate(config)
         expect(created.id).toBeDefined()
         expect(created).toMatchObject({...config, priority: created.id})
 
-        const fetched = await repository.getByIdWithContent(created.id!)
+        const fetched = await repository.jsonGetById(created.id!)
         expect(fetched).toEqual(created)
     })
 
@@ -45,26 +45,49 @@ describe('AbstractJSONRepository', () => {
             variables: {},
             priority: 5,
         }
-        const created = await repository.createWithContent(config)
+        const created = await repository.jsonCreate(config)
         expect(created).toMatchObject(config)
         expect(created.id).toBeDefined()
         expect(created.id).not.toBe(config.priority)
     })
 
-    test('listWithContent returns all rows', async () => {
+    test('jsonGetAll returns all rows', async () => {
         const configs: DashboardConfiguration[] = [
             {type: 'DASHBOARD', title: 'One', description: 'd1', panelsIds: [], variables: {}, priority: 0},
             {type: 'DASHBOARD', title: 'Two', description: 'd2', panelsIds: [], variables: {}, priority: 1},
         ]
         for (const c of configs) {
-            await repository.createWithContent(c)
+            await repository.jsonCreate(c)
         }
-        const list = await repository.listWithContent({orderBy: {column: 'id'}})
+        const list = await repository.jsonGetAll({orderBy: {column: 'id'}})
         expect(list).toHaveLength(2)
         expect(list.map(c => c.title)).toEqual(['One', 'Two'])
     })
 
-    test('updateWithContent merges JSON and updates fields', async () => {
+    test('jsonGetAllByType returns rows for specified type', async () => {
+        await repository.jsonCreate({
+            type: 'DASHBOARD',
+            title: 'One',
+            description: 'd1',
+            panelsIds: [],
+            variables: {},
+        })
+        await repository.jsonCreate({
+            type: 'DASHBOARD',
+            title: 'Two',
+            description: 'd2',
+            panelsIds: [],
+            variables: {},
+        })
+        const list = await repository.jsonGetAllByType('DASHBOARD', {orderBy: {column: 'id'}})
+        expect(list).toHaveLength(2)
+    })
+
+    test('jsonGetAllByType throws on unsupported type', async () => {
+        await expect(repository.jsonGetAllByType('PANEL')).rejects.toThrow('Unsupported type')
+    })
+
+    test('jsonUpdate merges JSON and updates fields', async () => {
         const config: DashboardConfiguration = {
             type: 'DASHBOARD',
             title: 'Main',
@@ -72,8 +95,8 @@ describe('AbstractJSONRepository', () => {
             panelsIds: [],
             variables: {},
         }
-        const created = await repository.createWithContent(config)
-        const updated = await repository.updateWithContent(created.id!, {
+        const created = await repository.jsonCreate(config)
+        const updated = await repository.jsonUpdate(created.id!, {
             description: 'new',
             priority: 5,
         })
@@ -87,14 +110,14 @@ describe('AbstractJSONRepository', () => {
     test('throws on missing type', async () => {
         await expect(
             // @ts-expect-error intentionally missing type
-            repository.createWithContent({title: 't', description: 'd', panelsIds: [], variables: {}}),
+            repository.jsonCreate({title: 't', description: 'd', panelsIds: [], variables: {}}),
         ).rejects.toThrow('type must be provided')
     })
 
     test('throws on unsupported type', async () => {
         // create
         await expect(
-            repository.createWithContent({
+            repository.jsonCreate({
                 // @ts-expect-error testing runtime check
                 type: 'PANEL',
                 title: 'x',
@@ -104,7 +127,7 @@ describe('AbstractJSONRepository', () => {
             }),
         ).rejects.toThrow('Unsupported type')
 
-        const created = await repository.createWithContent({
+        const created = await repository.jsonCreate({
             type: 'DASHBOARD',
             title: 't',
             description: 'd',
@@ -113,7 +136,7 @@ describe('AbstractJSONRepository', () => {
         })
 
         await expect(
-            repository.updateWithContent(created.id!, {type: 'PANEL'} as any),
+            repository.jsonUpdate(created.id!, {type: 'PANEL'} as any),
         ).rejects.toThrow('Unsupported type')
     })
 
@@ -141,8 +164,8 @@ describe('AbstractJSONRepository', () => {
             }),
         )
 
-        const created = await repository.createWithContent(complex as any)
-        const fetched = await repository.getByIdWithContent(created.id!)
+        const created = await repository.jsonCreate(complex as any)
+        const fetched = await repository.jsonGetById(created.id!)
         expect(fetched).toBeDefined()
         // Compare only JSON content parts
         expect({
@@ -153,8 +176,8 @@ describe('AbstractJSONRepository', () => {
         }).toEqual(expected)
     })
 
-    test('updateWithContent drops keys set to undefined and handles arrays', async () => {
-        const created = await repository.createWithContent({
+    test('jsonUpdate drops keys set to undefined and handles arrays', async () => {
+        const created = await repository.jsonCreate({
             type: 'DASHBOARD',
             title: 'A',
             description: 'B',
@@ -162,7 +185,7 @@ describe('AbstractJSONRepository', () => {
             variables: {x: 1, y: 2, arr: [1, 2]},
         })
 
-        const updated = await repository.updateWithContent(created.id!, {
+        const updated = await repository.jsonUpdate(created.id!, {
             description: undefined as any, // should drop description
             variables: {x: undefined as any, arr: [undefined as any, 3]}, // drop x, array undefined -> null
         })
