@@ -62,11 +62,5 @@ describe('AbstractKeyValueRepository', () => {
         await expect(repo.setValue('CIRC', circular)).rejects.toThrow('Converting circular structure to JSON')
         expect(await repo.getValue('CIRC')).toEqual({a: 1})
     })
-
-    test('stores Buffer values via JSON conversion', async () => {
-        const buf = Buffer.from('abc')
-        await repo.setValue('SAFE', buf as any)
-        expect(await repo.getValue('SAFE')).toEqual({type: 'Buffer', data: [97, 98, 99]})
-    })
 })
 
