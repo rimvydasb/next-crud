@@ -1,42 +1,11 @@
 import {Insertable, Kysely, sql, Updateable} from "kysely";
 import {ColumnType, TimestampDefault} from "./entities";
 import {BaseTable} from "./BaseTable";
-import {createdAtDefaultSql} from "./utilities";
-
-export type JsonPrimitive = string | number | boolean | null;
-export type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };
-
-function isPlainObject(x: unknown): x is Record<string, unknown> {
-    return (
-        typeof x === "object" &&
-        x !== null &&
-        !Array.isArray(x) &&
-        Object.getPrototypeOf(x) === Object.prototype
-    );
-}
-
-function isJsonSerializable(x: unknown): x is JsonValue {
-    if (x === null || typeof x === "string" || typeof x === "boolean") return true;
-    if (typeof x === "number") return Number.isFinite(x);
-    if (Array.isArray(x)) return x.every(isJsonSerializable);
-    if (isPlainObject(x)) {
-        for (const v of Object.values(x)) if (!isJsonSerializable(v)) return false;
-        return true;
-    }
-    return false;
-}
-
-function assertJsonSerializable(x: unknown): asserts x is JsonValue {
-    if (!isJsonSerializable(x)) {
-        throw new TypeError(
-            "Value is not JSON-serializable for jsonb. Allowed: null, string, finite number, boolean, arrays, plain objects."
-        );
-    }
-}
+import {createdAtDefaultSql, fromJsonContent, toJsonContent} from "./utilities";
 
 export interface KeyValueBaseTable {
     key: string;
-    value: JsonValue | null;
+    value: unknown | null;
     updated_at: TimestampDefault;
 }
 
@@ -52,32 +21,33 @@ export abstract class AbstractKeyValueRepository<
         super(database, config.tableName);
     }
 
-    private toDbJson(value: JsonValue | null) {
-        if (this.dialect === "sqlite") {
-            return value === null ? null : JSON.stringify(value);
-        }
-        /*language=TEXT*/
-        return sql`${JSON.stringify(value)}::jsonb`;
+    protected encodeJson(value: unknown): unknown {
+        const json = toJsonContent(value);
+        return this.dialect === "sqlite" ? JSON.stringify(json) : json;
     }
 
-    private decode(value: unknown): JsonValue | null {
+    protected encodeJsonOrNull(value: unknown | null | undefined): unknown | null {
+        if (value === '' || value == null) return null;
+        return this.encodeJson(value);
+    }
+
+    protected decodeJson<T>(value: unknown): T | null {
         if (value == null) return null;
-        if (this.dialect === "sqlite" && typeof value === "string") {
-            return JSON.parse(value);
-        }
-        // pg already parses json/jsonb to JS
-        return value as JsonValue;
+        const raw = this.dialect === "sqlite" && typeof value === "string" ? JSON.parse(value) : value;
+        return fromJsonContent(raw) as T;
     }
 
     async ensureSchema(): Promise<void> {
-        let builder = this.db.schema.createTable(this.tableName).ifNotExists();
-        builder = builder.addColumn("key", "varchar", (col) => col.notNull());
-        builder = builder.addColumn("value", this.sqlApi.toSQLType(ColumnType.JSON) as any);
-        builder = builder.addColumn(
-            "updated_at",
-            "timestamp",
-            (col) => col.notNull().defaultTo(sql.raw(createdAtDefaultSql()))
-        );
+        let builder = this.db.schema
+            .createTable(this.tableName)
+            .ifNotExists()
+            .addColumn("key", "varchar", (col) => col.notNull())
+            .addColumn("value", this.sqlApi.toSQLType(ColumnType.JSON) as any)
+            .addColumn(
+                "updated_at",
+                "timestamp",
+                (col) => col.notNull().defaultTo(sql.raw(createdAtDefaultSql())),
+            );
 
         builder = this.applyExtraColumns(builder);
 
@@ -93,21 +63,19 @@ export abstract class AbstractKeyValueRepository<
         return (rows as any[]).map((r) => r.key as string);
     }
 
-    async getValue<T extends JsonValue = JsonValue>(
-        key: string
-    ): Promise<T | null | undefined> {
+    async getValue<T = unknown>(key: string): Promise<T | null | undefined> {
         const row = await this.db
             .selectFrom(this.tableName as string)
             .select(["value"])
             .where("key", "=", key)
             .executeTakeFirst();
         if (!row) return undefined;
-        return this.decode((row as any).value) as T | null;
+        return this.decodeJson<T>((row as any).value);
     }
 
     async setValue(key: string, value: unknown): Promise<void> {
-        assertJsonSerializable(value);
-        const dbJson = this.toDbJson(value as JsonValue);
+        if (value === undefined) throw new TypeError('Value cannot be undefined');
+        const dbJson = this.encodeJsonOrNull(value);
 
         const res = await (this.db.updateTable(this.tableName as string) as any)
             .set(
@@ -115,7 +83,7 @@ export abstract class AbstractKeyValueRepository<
                     value: dbJson,
                     /*language=TEXT*/
                     updated_at: sql`CURRENT_TIMESTAMP`,
-                } as unknown as Updateable<DST[TableName]>
+                } as unknown as Updateable<DST[TableName]>,
             )
             .where("key", "=", key)
             .executeTakeFirst();
@@ -129,20 +97,20 @@ export abstract class AbstractKeyValueRepository<
                         value: dbJson,
                         /*language=TEXT*/
                         updated_at: sql`CURRENT_TIMESTAMP`,
-                    } as unknown as Insertable<DST[TableName]>
+                    } as unknown as Insertable<DST[TableName]>,
                 )
                 .execute();
         }
     }
 
-    async exportData(): Promise<Record<string, JsonValue | null>> {
+    async exportData(): Promise<Record<string, unknown | null>> {
         const rows = await this.db
             .selectFrom(this.tableName as string)
             .select(["key", "value"])
             .execute();
-        const result: Record<string, JsonValue | null> = {};
+        const result: Record<string, unknown | null> = {};
         for (const row of rows as any[]) {
-            result[row.key] = this.decode(row.value);
+            result[row.key] = this.decodeJson((row as any).value);
         }
         return result;
     }
@@ -151,8 +119,7 @@ export abstract class AbstractKeyValueRepository<
         await this.db.transaction().execute(async (trx) => {
             for (const [key, value] of Object.entries(obj)) {
                 if (value === undefined) continue;
-                assertJsonSerializable(value);
-                const dbJson = this.toDbJson(value as JsonValue);
+                const dbJson = this.encodeJsonOrNull(value);
 
                 const res = await (trx.updateTable(this.tableName as string) as any)
                     .set(
@@ -160,7 +127,7 @@ export abstract class AbstractKeyValueRepository<
                             value: dbJson,
                             /*language=TEXT*/
                             updated_at: sql`CURRENT_TIMESTAMP`,
-                        } as unknown as Updateable<DST[TableName]>
+                        } as unknown as Updateable<DST[TableName]>,
                     )
                     .where("key", "=", key)
                     .executeTakeFirst();
@@ -174,7 +141,7 @@ export abstract class AbstractKeyValueRepository<
                                 value: dbJson,
                                 /*language=TEXT*/
                                 updated_at: sql`CURRENT_TIMESTAMP`,
-                            } as unknown as Insertable<DST[TableName]>
+                            } as unknown as Insertable<DST[TableName]>,
                         )
                         .execute();
                 }
@@ -182,3 +149,4 @@ export abstract class AbstractKeyValueRepository<
         });
     }
 }
+
