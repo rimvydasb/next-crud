@@ -338,4 +338,30 @@ describe('DatabaseRequestDataCache', () => {
         const one = await cache.getLastOfType('TRANSACT', TTL.UNLIMITED)
         expect(one).toStrictEqual({a: 1})
     })
+
+    it('serializes like JSON.stringify (drops undefined)', async () => {
+        const complex = {
+            a: 1,
+            b: [1, undefined, 3, {x: undefined, y: 2}],
+            c: {d: 'e', u: undefined, nestedArr: [undefined, 'x']},
+            f: null,
+            u: undefined,
+        }
+        const metadata = {
+            m: 'meta',
+            arr: [undefined, {k: undefined, v: 7}],
+            inner: {keep: true, drop: undefined},
+        }
+        const expectedContent = JSON.parse(JSON.stringify(complex))
+        const expectedMeta = JSON.parse(JSON.stringify(metadata))
+
+        await cache.save({...sampleKey, metadata}, complex)
+        const latest = await cache.getLast<typeof complex>(sampleKey)
+        expect(latest).toEqual(expectedContent)
+
+        const all = await cache.getAll<typeof complex>(sampleKey)
+        expect(all).toHaveLength(1)
+        expect(all[0].content).toEqual(expectedContent)
+        expect(all[0].metadata).toEqual(expectedMeta)
+    })
 })
