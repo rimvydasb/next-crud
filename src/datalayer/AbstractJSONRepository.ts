@@ -62,7 +62,7 @@ export abstract class AbstractJSONRepository<DST, TableName extends keyof DST & 
         } as Content
     }
 
-    async createWithContent(content: Content): Promise<Content> {
+    async jsonCreate(content: Content): Promise<Content> {
         const {type, priority} = content
         if (!type) {
             throw new Error('type must be provided')
@@ -78,7 +78,7 @@ export abstract class AbstractJSONRepository<DST, TableName extends keyof DST & 
         return this.fromRow(row)
     }
 
-    async getByIdWithContent(
+    async jsonGetById(
         id: number,
         options: { includeDeleted?: boolean } = {},
     ): Promise<Content | undefined> {
@@ -86,7 +86,7 @@ export abstract class AbstractJSONRepository<DST, TableName extends keyof DST & 
         return row ? this.fromRow(row) : undefined
     }
 
-    async listWithContent(
+    async jsonGetAll(
         options: {
             includeDeleted?: boolean
             limit?: number
@@ -94,11 +94,38 @@ export abstract class AbstractJSONRepository<DST, TableName extends keyof DST & 
             orderBy?: { column: keyof DST[TableName]; direction?: 'asc' | 'desc' }
         } = {},
     ): Promise<Content[]> {
-        const rows = await super.list(options)
+        const rows = await super.getAll(options)
         return rows.map(r => this.fromRow(r))
     }
 
-    async updateWithContent(id: number, patch: Partial<Content>): Promise<Content | undefined> {
+    async jsonGetAllByType(
+        type: string,
+        options: {
+            includeDeleted?: boolean
+            limit?: number
+            offset?: number
+            orderBy?: { column: keyof DST[TableName]; direction?: 'asc' | 'desc' }
+        } = {},
+    ): Promise<Content[]> {
+        if (this.supportedTypes.length && !this.supportedTypes.includes(type)) {
+            throw new Error(`Unsupported type: ${type}`)
+        }
+        const {includeDeleted, limit = 50, offset = 0, orderBy} = options
+        let query = this.db
+            .selectFrom(this.tableName as string)
+            .selectAll()
+            .where('type', '=', type)
+        if (this.softDelete && !includeDeleted) {
+            query = query.where('deleted_at', 'is', null)
+        }
+        if (orderBy) {
+            query = query.orderBy(orderBy.column as string, orderBy.direction ?? 'asc')
+        }
+        const rows = (await query.limit(limit).offset(offset).execute()) as Array<Selectable<DST[TableName]>>
+        return rows.map(r => this.fromRow(r))
+    }
+
+    async jsonUpdate(id: number, patch: Partial<Content>): Promise<Content | undefined> {
         const {type, priority, ...jsonPatch} = patch as any
         const updateData: any = {}
         if (type !== undefined) {

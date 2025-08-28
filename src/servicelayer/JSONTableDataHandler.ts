@@ -33,7 +33,7 @@ export abstract class JSONTableDataHandler<
                 throw new ResponseError(ErrorCode.BAD_REQUEST, 'Invalid id')
             }
 
-            const row = await table.getByIdWithContent(id)
+            const row = await table.jsonGetById(id)
             if (row) {
                 this.ok(await this.postGet([row]))
             } else {
@@ -41,15 +41,20 @@ export abstract class JSONTableDataHandler<
             }
             return
         }
+        if (params['type'] !== undefined) {
+            const list = await table.jsonGetAllByType(params['type'])
+            this.ok(await this.postGet(list))
+            return
+        }
 
-        const list = await table.listWithContent()
+        const list = await table.jsonGetAll()
         this.ok(await this.postGet(list))
     }
 
     // ----- POST: create new content row
     protected async post(body: Content): Promise<void> {
         const table = await this.getTable()
-        const created = await table.createWithContent(body)
+        const created = await table.jsonCreate(body)
         await this.postProcess(await this.getDb())
         this.ok([created])
     }
@@ -65,10 +70,10 @@ export abstract class JSONTableDataHandler<
             Object.keys(body).length === 2
         ) {
             await table.updatePriority(body.id, (body as any).priority)
-            updated = await table.getByIdWithContent(body.id)
+            updated = await table.jsonGetById(body.id)
         } else {
             const {id, ...rest} = body as any
-            updated = await table.updateWithContent(id, rest)
+            updated = await table.jsonUpdate(id, rest)
         }
 
         if (updated) {
@@ -87,7 +92,7 @@ export abstract class JSONTableDataHandler<
         const deleted = await table.delete(body.id)
         if (deleted) {
             await this.postProcess(await this.getDb())
-            const content = await table.getByIdWithContent(body.id, {includeDeleted: true})
+            const content = await table.jsonGetById(body.id, {includeDeleted: true})
             if (content) {
                 this.ok([content])
             } else {

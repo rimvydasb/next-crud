@@ -42,7 +42,7 @@ export abstract class BaseTableDataHandler<DST, TableName extends keyof DST & st
             return
         }
 
-        const list = await table.list()
+        const list = await table.getAll()
         this.ok(await this.postGet(list))
     }
 
