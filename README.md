@@ -65,7 +65,7 @@ class RequestCacheRepository extends AbstractCacheRepository<DatabaseSchema, 're
 }
 
 const cache = new RequestCacheRepository(db)
-await cache.save({key: 'session1', type: 'SESSION'}, {userId: 1})
+await cache.create({key: 'session1', type: 'SESSION'}, {userId: 1})
 const exists = await cache.isCached({key: 'session1'}, TTL.ONE_DAY) // => true
 const data = await cache.getLast<{userId: number}>({key: 'session1'}, TTL.ONE_DAY) // => { userId: 1 }
 ```

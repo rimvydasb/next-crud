@@ -9,5 +9,10 @@ export default interface IRequestCache {
     /**
      * Persist the value under the provided cache key.
      */
-    save<T>(record: {key: string; type: string; [key: string]: any}, content: T): Promise<boolean>;
+    create<T>(record: {key: string; type: string; [key: string]: any}, content: T): Promise<boolean>;
+
+    /**
+     * Expire existing cached entries that match provided criteria.
+     */
+    expireEntries(select: Record<string, any>, ttl: TTL): Promise<number>;
 }
