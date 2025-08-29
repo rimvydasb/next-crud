@@ -43,15 +43,19 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
     }
 
     async expireEntries(select: Record<string, any>, ttl: TTL): Promise<number> {
-        if (ttl <= 0) throw new Error(`TTL ${ttl} is not supported for expiration`)
+        if (ttl < 0) throw new Error(`TTL ${ttl} is not supported for expiration`)
         this.ensureSelectNotEmpty(select)
         const qb = this.db
             .updateTable(this.tableName as string)
             .set({expired: this.expiredValue(true)} as unknown as Updateable<DST[TableName]>)
 
-        const qbWithFilters = this.applyFilters(qb, select)
-            .where(({eb, ref}: any) => eb(ref('created_at'), '>=', this.nowMinusSecondsExpr(ttl)))
-            .where(this.notExpiredPredicate())
+        let qbWithFilters = this.applyFilters(qb, select).where(this.notExpiredPredicate())
+
+        if (ttl !== TTL.UNLIMITED) {
+            qbWithFilters = qbWithFilters.where(({eb, ref}: any) =>
+                eb(ref('created_at'), '>=', this.nowMinusSecondsExpr(ttl)),
+            )
+        }
 
         const res = await qbWithFilters.executeTakeFirst()
         const n = (res as any)?.numUpdatedRows ?? 0n
@@ -143,7 +147,7 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
         return this.getLast<T>({type}, ttl)
     }
 
-    async save<T>(record: { key: string; type: string; [key: string]: any }, content: T): Promise<boolean> {
+    async create<T>(record: { key: string; type: string; [key: string]: any }, content: T): Promise<boolean> {
         if (content === undefined || content === null) return false
 
         const extraMap = new Map(this.extraColumns().map((c) => [c.name, c]))
@@ -180,7 +184,7 @@ export abstract class AbstractCacheRepository<DST, TableName extends keyof DST &
                     .executeTakeFirst()
                 return true
             } catch (e2) {
-                console.error('Error in save:', e2)
+                console.error('Error in create:', e2)
                 return false
             }
         }

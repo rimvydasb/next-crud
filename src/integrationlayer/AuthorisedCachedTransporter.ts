@@ -19,7 +19,8 @@ export default class AuthorisedCachedTransporter extends AuthorisedTransporter {
 
     /**
      * Execute a GET request and cache the response using the configured cache.
-     * If response is already
+     * If a response is already cached, the cached value is returned without
+     * making a network request.
      */
     public async getWithCache<T>(
         urlPart: string,
@@ -32,7 +33,24 @@ export default class AuthorisedCachedTransporter extends AuthorisedTransporter {
         const cached = await this.requestCache.getLast<T>(cacheKey, ttl);
         if (cached !== null) return cached;
         const result = await this.get<T>(normalized);
-        await this.requestCache.save(cacheKey, result);
+        await this.requestCache.create(cacheKey, result);
+        return result;
+    }
+
+    /**
+     * Refresh cache by performing a GET request and storing the new response.
+     * Previous cached entries with the same key are expired.
+     */
+    public async updateCache<T>(
+        urlPart: string,
+        type: string,
+        cacheKeyParts?: Partial<CacheEntry<any>>,
+    ): Promise<T> {
+        const normalized = this.normalizeUrlPart(urlPart);
+        const cacheKey = {key: normalized, type, ...cacheKeyParts};
+        const result = await this.get<T>(normalized);
+        await this.requestCache.expireEntries(cacheKey, TTL.UNLIMITED);
+        await this.requestCache.create(cacheKey, result);
         return result;
     }
 

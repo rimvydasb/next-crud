@@ -30,8 +30,8 @@ describe('DatabaseRequestDataCache', () => {
         await db.destroy()
     })
 
-    it('save() should insert and return true', async () => {
-        const ok = await cache.save({...sampleKey, metadata: sampleMeta}, sampleData)
+    it('create() should insert and return true', async () => {
+        const ok = await cache.create({...sampleKey, metadata: sampleMeta}, sampleData)
         expect(ok).toBe(true)
         const rows = await db
             .selectFrom('request_data_cache')
@@ -51,7 +51,7 @@ describe('DatabaseRequestDataCache', () => {
         }
     })
 
-    it('save() should insert primitive values and arrays', async () => {
+    it('create() should insert primitive values and arrays', async () => {
         const cases: any[] = [
             [1, 2, 3],
             42,
@@ -60,7 +60,7 @@ describe('DatabaseRequestDataCache', () => {
         ]
 
         for (const value of cases) {
-            const ok = await cache.save(sampleKey, value)
+            const ok = await cache.create(sampleKey, value)
             expect(ok).toBe(true)
             const rows = await cache.getAll({type: 'sampleType'})
             expect(rows).toHaveLength(1)
@@ -70,9 +70,9 @@ describe('DatabaseRequestDataCache', () => {
         }
     })
 
-    it('save() should not unmarshal JSON-like strings', async () => {
+    it('create() should not unmarshal JSON-like strings', async () => {
         const invalid = '{a: broken...}'
-        const ok = await cache.save(sampleKey, invalid)
+        const ok = await cache.create(sampleKey, invalid)
         expect(ok).toBe(true)
         const rows = await cache.getAll({type: 'sampleType'})
         expect(rows).toHaveLength(1)
@@ -80,22 +80,22 @@ describe('DatabaseRequestDataCache', () => {
         expect(row.content).toBe(invalid)
     })
 
-    it('save() should reject circular structures', async () => {
+    it('create() should reject circular structures', async () => {
         // skip if Postgres, Postgres unable to handle this test properly
         if (dialect === 'postgres') return
 
         const circular: any = {a: 1}
         circular.self = circular
-        await expect(cache.save(sampleKey, circular)).rejects.toThrow(
+        await expect(cache.create(sampleKey, circular)).rejects.toThrow(
             'Converting circular structure to JSON',
         )
         const rows = await cache.getAll({type: 'sampleType'})
         expect(rows).toHaveLength(0)
     })
 
-    it('save() should surface SQL constraint errors', async () => {
+    it('create() should surface SQL constraint errors', async () => {
         const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
-        const ok = await cache.save(
+        const ok = await cache.create(
             {key: true as any, type: null as any, reference: {a: 'a'} as any},
             sampleData,
         )
@@ -114,7 +114,7 @@ describe('DatabaseRequestDataCache', () => {
     })
 
     it('getLast() and getAll() should retrieve saved entry', async () => {
-        await cache.save({...sampleKey, metadata: sampleMeta}, sampleData)
+        await cache.create({...sampleKey, metadata: sampleMeta}, sampleData)
         const got = await cache.getLast<typeof sampleData>(sampleKey)
         expect(got).toEqual(sampleData)
         const all = await cache.getAll<typeof sampleData>(sampleKey)
@@ -129,9 +129,9 @@ describe('DatabaseRequestDataCache', () => {
     })
 
     it('getAll() with different TTL', async () => {
-        await cache.save({key: 'url1', type: 'TRANSACT', reference: 'expired'}, {a: 1})
-        await cache.save({key: 'url2', type: 'TRANSACT', reference: 'fine'}, {a: 1})
-        await cache.save({key: 'url3', type: 'TRANSACT', reference: 'outdated'}, {a: 1})
+        await cache.create({key: 'url1', type: 'TRANSACT', reference: 'expired'}, {a: 1})
+        await cache.create({key: 'url2', type: 'TRANSACT', reference: 'fine'}, {a: 1})
+        await cache.create({key: 'url3', type: 'TRANSACT', reference: 'outdated'}, {a: 1})
 
         await db
             .updateTable('request_data_cache')
@@ -179,7 +179,7 @@ describe('DatabaseRequestDataCache', () => {
     })
 
     it('getLast() with TTL should skip old entries', async () => {
-        await cache.save(sampleKey, {x: 1})
+        await cache.create(sampleKey, {x: 1})
         await db
             .updateTable('request_data_cache')
             .set({
@@ -195,7 +195,7 @@ describe('DatabaseRequestDataCache', () => {
     })
 
     it('isCached() should check existence without retrieving', async () => {
-        await cache.save(sampleKey, {x: 1})
+        await cache.create(sampleKey, {x: 1})
         const exists = await cache.isCached(sampleKey)
         expect(exists).toBe(true)
 
@@ -211,8 +211,8 @@ describe('DatabaseRequestDataCache', () => {
     })
 
     it('expireEntries() should mark matching rows expired', async () => {
-        await cache.save(sampleKey, {a: 1})
-        await cache.save({...sampleKey, reference: 'other'}, {b: 2})
+        await cache.create(sampleKey, {a: 1})
+        await cache.create({...sampleKey, reference: 'other'}, {b: 2})
         const before = await db.selectFrom('request_data_cache').select(['expired']).execute()
         expect(before.every((r: any) => !r.expired)).toBe(true)
 
@@ -229,8 +229,8 @@ describe('DatabaseRequestDataCache', () => {
     })
 
     it('cleanExpiredEntries() should delete only expired rows', async () => {
-        await cache.save({...sampleKey, metadata: sampleMeta}, sampleData)
-        await cache.save({...sampleKey, reference: 'expired-ref', metadata: sampleMeta}, sampleData)
+        await cache.create({...sampleKey, metadata: sampleMeta}, sampleData)
+        await cache.create({...sampleKey, reference: 'expired-ref', metadata: sampleMeta}, sampleData)
         await db
             .updateTable('request_data_cache')
             .set({expired: dialect === 'postgres' ? true : 1})
@@ -249,9 +249,9 @@ describe('DatabaseRequestDataCache', () => {
     })
 
     it('main test', async () => {
-        await cache.save({key: 'url1', type: 'TRANSACT', reference: 'ref1'}, {a: 1})
-        await cache.save({key: 'url2', type: 'TRANSACT', reference: 'ref2'}, {b: 2})
-        await cache.save({key: 'url3', type: 'TRANSACT', reference: 'ref3'}, {c: 3})
+        await cache.create({key: 'url1', type: 'TRANSACT', reference: 'ref1'}, {a: 1})
+        await cache.create({key: 'url2', type: 'TRANSACT', reference: 'ref2'}, {b: 2})
+        await cache.create({key: 'url3', type: 'TRANSACT', reference: 'ref3'}, {c: 3})
 
         await db
             .updateTable('request_data_cache')
@@ -291,10 +291,10 @@ describe('DatabaseRequestDataCache', () => {
     })
 
     it('getAll returns the most recent first', async () => {
-        await cache.save({key: 'url1', type: 'TRANSACT', reference: 'ref1'}, {a: 1})
-        await cache.save({key: 'url2', type: 'TRANSACT', reference: 'ref2'}, {b: 2})
-        await cache.save({key: 'url3', type: 'TRANSACT', reference: 'ref3'}, {c: 3})
-        await cache.save({key: 'url4', type: 'TRANSACT', reference: 'ref4'}, {d: 4})
+        await cache.create({key: 'url1', type: 'TRANSACT', reference: 'ref1'}, {a: 1})
+        await cache.create({key: 'url2', type: 'TRANSACT', reference: 'ref2'}, {b: 2})
+        await cache.create({key: 'url3', type: 'TRANSACT', reference: 'ref3'}, {c: 3})
+        await cache.create({key: 'url4', type: 'TRANSACT', reference: 'ref4'}, {d: 4})
 
         await db
             .updateTable('request_data_cache')
@@ -355,7 +355,7 @@ describe('DatabaseRequestDataCache', () => {
         const expectedContent = JSON.parse(JSON.stringify(complex))
         const expectedMeta = JSON.parse(JSON.stringify(metadata))
 
-        await cache.save({...sampleKey, metadata}, complex)
+        await cache.create({...sampleKey, metadata}, complex)
         const latest = await cache.getLast<typeof complex>(sampleKey)
         expect(latest).toEqual(expectedContent)
 
